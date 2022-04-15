@@ -1,19 +1,11 @@
 SOURCES += \
-	src/app.cpp \
-	src/glview.cpp \
-	src/glstate.cpp \
-	src/mesh.cpp \
-	src/light.cpp \
-	src/util.cpp \
+	src/*.cpp \
+	src/*.cc \
 	src/gl_core_3_3.c
 
 HEADERS += \
-	src/app.hpp \
-	src/glview.hpp \
-	src/glstate.hpp \
-	src/mesh.hpp \
-	src/light.hpp \
-	src/util.hpp \
+	src/*.hpp \
+	src/*.hh \
 	src/gl_core_3_3.h
 
 INCLUDEPATH += \
