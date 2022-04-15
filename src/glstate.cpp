@@ -71,6 +71,9 @@ void GLState::paintGL() {
 	glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -camCoords.z));
 	view = glm::rotate(view, glm::radians(camCoords.y), glm::vec3(1.0f, 0.0f, 0.0f));
 	view = glm::rotate(view, glm::radians(camCoords.x), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	// TODO Correct different coordinate
+	view = glm::rotate(view, glm::half_pi<float>(), glm::vec3(-1.0f, 0, 0));
 	// Combine transformations
 	viewProjMat = proj * view;
 

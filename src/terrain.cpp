@@ -47,33 +47,34 @@ void Terrain::evaluate() {
         for (int i = 0; i < width; i++)
             matrix[i] = new double[length];
 
+        for (int i = 0; i < width; i++)
+            for (int j = 0; j < length; j++)
+                matrix[i][j] = 0;
+
         // Fill in values for matrix
-        for (int row = 0; row < width; row++) {
-            for (int col = 0; col < length; col++) {
-                // Initialize height to 0
-                matrix[row][col] = 0;
+        double vars[3];
+        vars[2] = 0;
+        for (auto func_it = functions.begin(); func_it != functions.end(); func_it++) {
+            // Evaluaten function and add to terrain height map
+            std::string func_string = *func_it;
+            terrainParser.Parse(func_string, "x,y,N");
+            // terrainParser.Optimize();
+            for (int row = 0; row < width; row++) {
+                for (int col = 0; col < length; col++) {
+                    // Get xy coordinate by mapping x and y to [-1, 1]
+                    double x = 2 * ((double) row / (double) width) - 1;
+                    double y = 2 * ((double) col / (double) length) - 1;
+                    
+                    // Put variables for functions here
+                    vars[0] = x;
+                    vars[1] = y;
 
-                // Get xy coordinate by mapping x and y to [-1, 1]
-                double x = 2 * ((double) row / (double) width) - 1;
-                double y = 2 * ((double) col / (double) length) - 1;
-                
-                // Put variables for functions here
-                double vars[3];
-                vars[0] = x;
-                vars[1] = y;
-                vars[2] = 0;
-
-                // Evaluate functions
-                for (auto func_it = functions.begin(); func_it != functions.end(); func_it++) {
-                    // Evaluaten function and add to terrain height map
-                    std::string func_string = *func_it;
-                    terrainParser.Parse(func_string, "x,y,N");
+                    // Evaluate functions
                     matrix[row][col] += terrainParser.Eval(vars);
-
-                    // Increase count of layer, N
-                    vars[2]++;
                 }
             }
+            // Increase count of layer, N
+            vars[2]++;
         }
 
         // Finish generating one layer, push to vector
@@ -202,9 +203,7 @@ double Terrain::TerrainFuncParser::perlinNoise(const double* xyf)  {
     double x = xyf[0];
     double y = xyf[1];
     double f = xyf[2];
-    double freq_x = f / width;
-    double freq_y = f / length;
-    return perlin_device.noise2D(x * freq_x, y * freq_y);
+    return perlin_device.noise2D(x * f, y * f);
 }
 
 double Terrain::TerrainFuncParser::plane(const double* xyc1c2c3) {

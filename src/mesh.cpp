@@ -41,14 +41,18 @@ void Mesh::load(std::string filename, bool keepLocalGeometry) {
 	// release();
 
 	// TODO Temp: testing generator
-	terrain.setSize(128, 128);
-	terrain.setSeed(120032);
+	terrain.setSize(1024, 1024);
+	terrain.setSeed(1);
 	std::string name("Test");
 	terrain.setName(name);
 	std::vector<std::string> functions;
 	glm::vec3 color(12, 323, 23);
 
-	functions.push_back("pyramid(x, y, 0, 0, 0, 0, 0, 0, 0.5)");
+	functions.push_back("pyramid(x, y, 0, 0, 0, 0, 0.5, -0.3, 1)");
+	functions.push_back("pyramid(x, y, 0, 0, 0, 0, -0.5, 0.3, 1)");
+	functions.push_back("pyramid(x, y, 0, 0, 0, 0, 0, 0, -1)");
+	functions.push_back("perlin(x, y, 2^(N)) * 2^(-N)");
+
 	terrain.pushLayer(std::pair(functions, color));
 	terrain.evaluate();
 	// terrain.printMatrix(0);
