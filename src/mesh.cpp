@@ -46,8 +46,8 @@ void Mesh::load(std::string filename, bool keepLocalGeometry) {
 	}
 
 	// Store vertex data while reading
-	std::vector<glm::vec3> raw_vertices;
-	std::vector<unsigned int> v_elements;
+	std::vector<glm::vec3> raw_vertices;	// Vertices data
+	std::vector<unsigned int> v_elements;	// Vertices indices forming faces
 
 	std::string line;
 	while (getline(file, line)) {
@@ -95,6 +95,37 @@ void Mesh::load(std::string filename, bool keepLocalGeometry) {
 	std::vector<glm::vec3> face_normals(v_elements.size());
 	std::vector<glm::vec3> accumulated_normals(raw_vertices.size(), glm::vec3(0.0f));
 
+	// Compute face normals first
+	for (int i = 0; i< int(face_normals.size()); i += 3) {
+		// All three vertices in a triangle shared the same face normal
+		// ? Order of the two edges?
+		int A = v_elements[i];
+		int B = v_elements[i + 1];
+		int C = v_elements[i + 2];
+		glm::vec3 AB = glm::normalize(raw_vertices[B] - raw_vertices[A]);
+		glm::vec3 AC = glm::normalize(raw_vertices[C] - raw_vertices[A]);
+		glm::vec3 n  = glm::normalize(glm::cross(AB, AC));
+		face_normals[i] = n;
+		face_normals[i + 1] = n;
+		face_normals[i + 2] = n;
+
+		// For angles
+		glm::vec3 BA = -AB;
+		glm::vec3 BC = glm::normalize(raw_vertices[C] - raw_vertices[B]);
+		glm::vec3 CA = -AC;
+		glm::vec3 CB = -BC;
+
+		// Weighted accumlate
+		accumulated_normals[A] += n * glm::acos(glm::dot(AB, AC));
+		accumulated_normals[B] += n * glm::acos(glm::dot(BA, BC));
+		accumulated_normals[C] += n * glm::acos(glm::dot(CA, CB));
+	}
+
+	// Based on face normals, compute smoothed normal for each vertices
+	for (int i = 0; i < int(accumulated_normals.size()); i++) {
+		accumulated_normals[i] = glm::normalize(accumulated_normals[i]);
+	}
+
 	// Create vertex array
 	vertices = std::vector<Vertex>(v_elements.size());
 	for (int i = 0; i < int(v_elements.size()); i += 3) {
@@ -103,8 +134,14 @@ void Mesh::load(std::string filename, bool keepLocalGeometry) {
 		vertices[i+1].pos = raw_vertices[v_elements[i+1]];
 		vertices[i+2].pos = raw_vertices[v_elements[i+2]];
 
-		// TODO ====================================================================
 		// Store face and smoothed normals in each vertex
+		vertices[i+0].face_norm = face_normals[i+0];
+		vertices[i+1].face_norm = face_normals[i+1];
+		vertices[i+2].face_norm = face_normals[i+2];
+
+		vertices[i+0].smooth_norm = accumulated_normals[v_elements[i+0]];
+		vertices[i+1].smooth_norm = accumulated_normals[v_elements[i+1]];
+		vertices[i+2].smooth_norm = accumulated_normals[v_elements[i+2]];
 	}
 	vcount = (GLsizei)vertices.size();
 
