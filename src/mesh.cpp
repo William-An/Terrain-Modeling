@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include "terrain.hpp"
 
 // Helper functions
 int indexOfNumberLetter(std::string& str, int offset);
@@ -37,6 +38,20 @@ void Mesh::draw() {
 void Mesh::load(std::string filename, bool keepLocalGeometry) {
 	// Release resources
 	release();
+
+	// TODO Temp: testing generator
+	Terrain terrain;
+	terrain.setSize(128, 128);
+	terrain.setSeed(1);
+	std::string name("Test");
+	terrain.setName(name);
+	std::vector<std::string> functions;
+	glm::vec3 color(12, 323, 23);
+
+	functions.push_back("plane(x,y,0,0,0,0)");
+	terrain.pushLayer(std::pair(functions, color));
+	terrain.evaluate();
+	terrain.printMatrix(0);
 
 	std::ifstream file(filename);
 	if (!file.is_open()) {
