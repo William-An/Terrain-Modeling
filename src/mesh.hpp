@@ -6,6 +6,7 @@
 #include <utility>
 #include <glm/glm.hpp>
 #include "gl_core_3_3.h"
+#include "terrain.hpp"
 
 class Mesh {
 public:
@@ -33,6 +34,7 @@ public:
 	};
 	// Local geometry data
 	std::vector<Vertex> vertices;
+	Terrain terrain;
 
 protected:
 	void release();		// Release OpenGL resources

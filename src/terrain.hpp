@@ -32,6 +32,9 @@ public:
     // Evaluate configuration and generate mesh data for draw
     void evaluate();
 
+    // Generate vertices and Load into opengl
+    void generate();
+
     // Draw the mesh
     void draw();
 
@@ -84,7 +87,7 @@ protected:
             TerrainFuncParser() {
                 AddFunction("perlin", perlinNoise, 3);
                 AddFunction("plane", plane, 5);
-                AddFunction("pyramid", pyramid, 7);
+                AddFunction("pyramid", pyramid, 9);
             };
 
             static void setSeed(int64_t s) {seed = s;};
@@ -116,6 +119,25 @@ protected:
     };
 
     TerrainFuncParser terrainParser;
+
+    // Vertex structure for rendering
+    struct Vertex {
+		glm::vec3 pos;			// Position
+		glm::vec3 face_norm;	// Face normal
+		glm::vec3 smooth_norm;	// Smoothed normal
+		// Vertex();
+	};
+
+    void release();		// Release OpenGL resources
+
+	// Bounding box
+	glm::vec3 minBB;
+	glm::vec3 maxBB;
+
+	// OpenGL resources
+	GLuint vao;		// Vertex array object
+	GLuint vbuf;	// Vertex buffer
+	GLsizei vcount;	// Number of vertices
 };
 
 #endif // !__TERRAIN_HPP__

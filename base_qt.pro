@@ -16,5 +16,5 @@ OBJECTS_DIR = build/obj
 RCC_DIR     = build/qrc
 UI_DIR      = build/uic
 
-CONFIG += qt c++17
+CONFIG += qt c++17 debug
 QT += widgets

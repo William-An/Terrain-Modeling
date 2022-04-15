@@ -29,29 +29,31 @@ Mesh::Mesh(std::string filename, bool keepLocalGeometry) {
 
 // Draw the mesh
 void Mesh::draw() {
-	glBindVertexArray(vao);
-	glDrawArrays(GL_TRIANGLES, 0, vcount);
-	glBindVertexArray(0);
+	terrain.draw();
+	// glBindVertexArray(vao);
+	// glDrawArrays(GL_TRIANGLES, 0, vcount);
+	// glBindVertexArray(0);
 }
 
 // Load a wavefront OBJ file
 void Mesh::load(std::string filename, bool keepLocalGeometry) {
 	// Release resources
-	release();
+	// release();
 
 	// TODO Temp: testing generator
-	Terrain terrain;
 	terrain.setSize(128, 128);
-	terrain.setSeed(1);
+	terrain.setSeed(120032);
 	std::string name("Test");
 	terrain.setName(name);
 	std::vector<std::string> functions;
 	glm::vec3 color(12, 323, 23);
 
-	functions.push_back("plane(x,y,0,0,0,0)");
+	functions.push_back("pyramid(x, y, 0, 0, 0, 0, 0, 0, 0.5)");
 	terrain.pushLayer(std::pair(functions, color));
 	terrain.evaluate();
-	terrain.printMatrix(0);
+	// terrain.printMatrix(0);
+	terrain.generate();
+	// terrain.draw();
 
 	std::ifstream file(filename);
 	if (!file.is_open()) {
@@ -158,25 +160,25 @@ void Mesh::load(std::string filename, bool keepLocalGeometry) {
 		vertices[i+1].smooth_norm = accumulated_normals[v_elements[i+1]];
 		vertices[i+2].smooth_norm = accumulated_normals[v_elements[i+2]];
 	}
-	vcount = (GLsizei)vertices.size();
+	// vcount = (GLsizei)vertices.size();
 
 	// Load vertices into OpenGL
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
+	// glGenVertexArrays(1, &vao);
+	// glBindVertexArray(vao);
 
-	glGenBuffers(1, &vbuf);
-	glBindBuffer(GL_ARRAY_BUFFER, vbuf);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+	// glGenBuffers(1, &vbuf);
+	// glBindBuffer(GL_ARRAY_BUFFER, vbuf);
+	// glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
 
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)sizeof(glm::vec3));
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(2 * sizeof(glm::vec3)));
+	// glEnableVertexAttribArray(0);
+	// glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL);
+	// glEnableVertexAttribArray(1);
+	// glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)sizeof(glm::vec3));
+	// glEnableVertexAttribArray(2);
+	// glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(2 * sizeof(glm::vec3)));
 
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	// glBindVertexArray(0);
+	// glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	// Delete local copy of geometry
 	if (!keepLocalGeometry)

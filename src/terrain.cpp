@@ -81,8 +81,101 @@ void Terrain::evaluate() {
     }
 }
 
+void Terrain::generate() {
+    // TODO from raw_layers, generate faces, flat norms, and smooth norms
+    // TODO Just plot the terrain first, layer of sea should be done later
+    int num_triangles = (length - 1) * (width - 1) * 2;
+	std::vector<Vertex> vertices(num_triangles * 3);
+
+    // TODO Just plotting the first layer
+    std::pair first_layer = raw_layers[0];
+    double **heightmap = first_layer.first;
+    glm::vec3 color = first_layer.second;
+
+    for (int row = 0; row < width - 1; row++) {
+        for (int col = 0; col < length - 1; col++) {
+            // Add two triangle in the sqaure formed by
+            // matrix[row][col], matrix[row + 1][col], matrix[row + 1][col + 1], matrix[row, col + 1]
+
+            // col   col + 1
+            // c1 --- c2  row + 1
+            //  |  /  |
+            // c4 --- c3  row
+
+            // Scale to [-1, 1]
+            glm::vec3 corner1(2 * ((double) (row + 1) / width) - 1, 2 * ((double) col / length) - 1, heightmap[row + 1][col]);
+            glm::vec3 corner2(2 * ((double) (row + 1) / width) - 1, 2 * ((double) (col + 1) / length) - 1, heightmap[row + 1][col + 1]);
+            glm::vec3 corner3(2 * ((double) row / width) - 1, 2 * ((double) (col + 1) / length) - 1, heightmap[row][col + 1]);
+            glm::vec3 corner4(2 * ((double) row / width) - 1, 2 * ((double) col / length) - 1, heightmap[row][col]);
+
+            // Calculating top triangle face norm and smooth norm
+            // formed by c4, c1, c2
+            glm::vec3 top_v1 = glm::normalize(corner1 - corner2);
+            glm::vec3 top_v2 = glm::normalize(corner4 - corner2);
+            glm::vec3 face_norm_top  = glm::normalize(glm::cross(top_v1, top_v2));
+
+            // Calculating botton triangle
+            // formed by c2, c3, c4
+            glm::vec3 bot_v1 = glm::normalize(corner3 - corner4);
+            glm::vec3 bot_v2 = glm::normalize(corner2 - corner4);
+            glm::vec3 face_norm_bot  = glm::normalize(glm::cross(bot_v1, bot_v2));
+
+            // Push back triangle vertices and norms data into vector
+            vertices[(row * (length - 1) + col) * 6 + 0].pos = corner4;
+            vertices[(row * (length - 1) + col) * 6 + 1].pos = corner1;
+            vertices[(row * (length - 1) + col) * 6 + 2].pos = corner2;
+            vertices[(row * (length - 1) + col) * 6 + 3].pos = corner2;
+            vertices[(row * (length - 1) + col) * 6 + 4].pos = corner3;
+            vertices[(row * (length - 1) + col) * 6 + 5].pos = corner4;
+
+            vertices[(row * (length - 1) + col) * 6 + 0].face_norm = face_norm_top;
+            vertices[(row * (length - 1) + col) * 6 + 1].face_norm = face_norm_top;
+            vertices[(row * (length - 1) + col) * 6 + 2].face_norm = face_norm_top;
+            vertices[(row * (length - 1) + col) * 6 + 3].face_norm = face_norm_bot;
+            vertices[(row * (length - 1) + col) * 6 + 4].face_norm = face_norm_bot;
+            vertices[(row * (length - 1) + col) * 6 + 5].face_norm = face_norm_bot;
+
+            // TODO For testing only, treat smooth as face norm
+            vertices[(row * (length - 1) + col) * 6 + 0].smooth_norm = face_norm_top;
+            vertices[(row * (length - 1) + col) * 6 + 1].smooth_norm = face_norm_top;
+            vertices[(row * (length - 1) + col) * 6 + 2].smooth_norm = face_norm_top;
+            vertices[(row * (length - 1) + col) * 6 + 3].smooth_norm = face_norm_bot;
+            vertices[(row * (length - 1) + col) * 6 + 4].smooth_norm = face_norm_bot;
+            vertices[(row * (length - 1) + col) * 6 + 5].smooth_norm = face_norm_bot;
+        }
+    }
+
+    std::cout << glm::to_string(vertices[0].pos) << std::endl;
+    std::cout << glm::to_string(vertices[0].face_norm) << std::endl;
+    std::cout << glm::to_string(vertices[1].pos) << std::endl;
+    std::cout << glm::to_string(vertices[1].face_norm) << std::endl;std::cout << glm::to_string(vertices[2].pos) << std::endl;
+    std::cout << glm::to_string(vertices[2].face_norm) << std::endl;
+
+    // Load into OpenGL
+	vcount = (GLsizei)vertices.size();
+    // Load vertices into OpenGL
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
+	glGenBuffers(1, &vbuf);
+	glBindBuffer(GL_ARRAY_BUFFER, vbuf);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)sizeof(glm::vec3));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(2 * sizeof(glm::vec3)));
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
 void Terrain::draw() {
-    // TODO
+	glBindVertexArray(vao);
+	glDrawArrays(GL_TRIANGLES, 0, vcount);
+	glBindVertexArray(0);
 }
 
 void Terrain::printMatrix(int indx) {
@@ -182,20 +275,22 @@ double Terrain::TerrainFuncParser::pyramid(const double* xyc1c2c3c4xyz) {
         glm::vec3 p2 = point_sequence[i + 1];
         glm::vec3 v1 = p1 - p2;
         glm::vec3 v2 = apex - p2;
+        glm::vec3 v3 = apex - p1;
 
         // Projected to zero-plane for v1 and v2
         glm::vec3 point = glm::vec3(x, y, 0) - glm::vec3(p2.x, p2.y, 0);
         glm::vec3 t1 = glm::cross(glm::vec3(v1.x, v1.y, 0), point);
         glm::vec3 t2 = glm::cross(point, glm::vec3(v2.x, v2.y, 0));
+        point = glm::vec3(x, y, 0) - glm::vec3(p1.x, p1.y, 0);
+        glm::vec3 t3 = glm::cross(glm::vec3(v3.x, v3.y, 0), point);
 
         // Same sign, point in triangle
-        if ((t1.z <= 0 && t2.z <= 0) || (t1.z >= 0 && t2.z >= 0)) {
+        if ((t1.z <= 0 && t2.z <= 0 && t3.z <= 0) || (t1.z >= 0 && t2.z >= 0 && t3.z >= 0)) {
             // Compute z 
             glm::vec3 normal = glm::normalize(glm::cross(v1, v2));
             z = (-normal.x * (x - p2.x) - normal.y * (y - p2.y))/normal.z + p2.z;
             break;
         }
     }
-
     return z;
 }
