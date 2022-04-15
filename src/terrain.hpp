@@ -82,6 +82,7 @@ protected:
     // Function controlling each layer
     std::vector<std::pair<std::vector<std::string>, glm::vec3>> layers_functions;
 
+    // TODO Use thread to speed up?
     class TerrainFuncParser : public FunctionParser {
         public:
             TerrainFuncParser() {

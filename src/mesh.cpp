@@ -41,7 +41,7 @@ void Mesh::load(std::string filename, bool keepLocalGeometry) {
 	// release();
 
 	// TODO Temp: testing generator
-	terrain.setSize(1024, 1024);
+	terrain.setSize(100, 100);
 	terrain.setSeed(1);
 	std::string name("Test");
 	terrain.setName(name);

@@ -108,18 +108,35 @@ void Terrain::generate() {
             glm::vec3 corner2(2 * ((double) (row + 1) / width) - 1, 2 * ((double) (col + 1) / length) - 1, heightmap[row + 1][col + 1]);
             glm::vec3 corner3(2 * ((double) row / width) - 1, 2 * ((double) (col + 1) / length) - 1, heightmap[row][col + 1]);
             glm::vec3 corner4(2 * ((double) row / width) - 1, 2 * ((double) col / length) - 1, heightmap[row][col]);
+            // Correct axe with height as z to height as y, and y to -z
+            double tmp;
+            tmp = corner1.z;
+            corner1.z = -corner1.y;
+            corner1.y = tmp;
+
+            tmp = corner2.z;
+            corner2.z = -corner2.y;
+            corner2.y = tmp;
+
+            tmp = corner3.z;
+            corner3.z = -corner3.y;
+            corner3.y = tmp;
+
+            tmp = corner4.z;
+            corner4.z = -corner4.y;
+            corner4.y = tmp;
 
             // Calculating top triangle face norm and smooth norm
             // formed by c4, c1, c2
             glm::vec3 top_v1 = glm::normalize(corner1 - corner2);
             glm::vec3 top_v2 = glm::normalize(corner4 - corner2);
-            glm::vec3 face_norm_top  = glm::normalize(glm::cross(top_v1, top_v2));
+            glm::vec3 face_norm_top  = -glm::normalize(glm::cross(top_v1, top_v2));
 
             // Calculating botton triangle
             // formed by c2, c3, c4
             glm::vec3 bot_v1 = glm::normalize(corner3 - corner4);
             glm::vec3 bot_v2 = glm::normalize(corner2 - corner4);
-            glm::vec3 face_norm_bot  = glm::normalize(glm::cross(bot_v1, bot_v2));
+            glm::vec3 face_norm_bot  = -glm::normalize(glm::cross(bot_v1, bot_v2));
 
             // Push back triangle vertices and norms data into vector
             vertices[(row * (length - 1) + col) * 6 + 0].pos = corner4;

@@ -72,8 +72,10 @@ void GLState::paintGL() {
 	view = glm::rotate(view, glm::radians(camCoords.y), glm::vec3(1.0f, 0.0f, 0.0f));
 	view = glm::rotate(view, glm::radians(camCoords.x), glm::vec3(0.0f, 1.0f, 0.0f));
 
-	// TODO Correct different coordinate
-	view = glm::rotate(view, glm::half_pi<float>(), glm::vec3(-1.0f, 0, 0));
+	glm::mat4 transformAxe = glm::rotate(glm::mat4(1.0f), glm::half_pi<float>(), glm::vec3(-1, 0, 0));
+
+	// view *= transformAxe;
+
 	// Combine transformations
 	viewProjMat = proj * view;
 
@@ -83,6 +85,7 @@ void GLState::paintGL() {
 		glm::mat4 modelMat = glm::scale(glm::mat4(1.0f),
 			glm::vec3(1.0f / glm::length(meshBB.second - meshBB.first)));
 		modelMat = glm::translate(modelMat, -(meshBB.first + meshBB.second) / 2.0f);
+		// modelMat *= transformAxe;
 		// Upload transform matrices to shader
 		glUniformMatrix4fv(modelMatLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
 		glUniformMatrix4fv(viewProjMatLoc, 1, GL_FALSE, glm::value_ptr(viewProjMat));
