@@ -8,11 +8,11 @@ models/icosphere.obj
 #   specular exponent    [1, 1024]
 #   object color R G B   [0, 255]
 
-0.0
-0.0
-0.0
-1.0
-0 0 0
+0.343
+0.68
+0.66
+5.66
+190 170 160
 
 
 # Number of lights (max 8)
@@ -29,10 +29,10 @@ models/icosphere.obj
 1
 0
 255 255 255
-0 1 0
+0.4 0.0 0.7
 
 # Light 2
-0
-0
+1
+1
 255 255 255
-0 1 0
+-0.7 0.0 0.0
