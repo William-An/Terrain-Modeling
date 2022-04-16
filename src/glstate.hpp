@@ -8,6 +8,7 @@
 #include "gl_core_3_3.h"
 #include "mesh.hpp"
 #include "light.hpp"
+#include "terrain.hpp"
 
 // Manages OpenGL state, e.g. camera transform, objects, shaders
 class GLState {
@@ -71,7 +72,7 @@ public:
 	void offsetCamera(float offset);
 
 	// Set object to display
-	void showObjFile(const std::string& filename);
+	// void showObjFile(const std::string& filename);
 
 protected:
 	bool init;						// Whether we've been initialized yet
@@ -93,8 +94,9 @@ protected:
 
 	// Mesh and lights
 	std::string meshFilename;		// Name of the obj file being shown
-	std::unique_ptr<Mesh> mesh;		// Pointer to mesh object
+	// std::unique_ptr<Mesh> mesh;		// Pointer to mesh object
 	std::vector<Light> lights;		// Lights
+	std::unique_ptr<Terrain> terrain;
 
 	// Shader state
 	GLuint shader;			// GPU shader program

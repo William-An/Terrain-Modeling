@@ -50,6 +50,32 @@ void GLState::initializeGL() {
 	// Create lights
 	lights.resize(Light::MAX_LIGHTS);
 
+	// Initialize terrain
+	terrain = std::unique_ptr<Terrain>(new Terrain());
+
+	// TODO: Initialize for testing purpose only
+	terrain->setSize(100, 100);
+	terrain->setSeed(1);
+	std::string name("Test");
+	terrain->setName(name);
+	std::vector<std::string> functions;
+	glm::vec3 color(12, 323, 23);
+
+	functions.push_back("pyramid(x, y, 0, 0, 0, 0, 0.5, -0.3, 1)");
+	functions.push_back("pyramid(x, y, 0, 0, 0, 0, -0.5, 0.3, 1)");
+	functions.push_back("pyramid(x, y, 0, 0, 0, 0.3, -0.3, 0, -1)");
+	functions.push_back("perlin(x, y, 2^(N/2)) * 0.5");
+	functions.push_back("perlin(x, y, 2^(N/2)) * 0.05");
+	functions.push_back("perlin(x, y, 2^(N/2)) * 0.01");
+	functions.push_back("perlin(x, y, 2^(N/2)) * 0.005");
+
+
+	terrain->pushLayer(std::pair(functions, color));
+
+	// TODO: Need a button to call regenerate
+	terrain->evaluate();
+	terrain->generate();
+
 	// Set initialized state
 	init = true;
 }
@@ -72,19 +98,15 @@ void GLState::paintGL() {
 	view = glm::rotate(view, glm::radians(camCoords.y), glm::vec3(1.0f, 0.0f, 0.0f));
 	view = glm::rotate(view, glm::radians(camCoords.x), glm::vec3(0.0f, 1.0f, 0.0f));
 
-	glm::mat4 transformAxe = glm::rotate(glm::mat4(1.0f), glm::half_pi<float>(), glm::vec3(-1, 0, 0));
-
-	// view *= transformAxe;
-
 	// Combine transformations
 	viewProjMat = proj * view;
 
-	if (mesh) {
+	if (terrain) {
 		// Scale and center mesh using its bounding box
-		auto meshBB = mesh->boundingBox();
+		auto terrainBB = std::pair(glm::vec3(1), glm::vec3(-1));
 		glm::mat4 modelMat = glm::scale(glm::mat4(1.0f),
-			glm::vec3(1.0f / glm::length(meshBB.second - meshBB.first)));
-		modelMat = glm::translate(modelMat, -(meshBB.first + meshBB.second) / 2.0f);
+			glm::vec3(1.0f / glm::length(terrainBB.second - terrainBB.first)));
+		modelMat = glm::translate(modelMat, -(terrainBB.first + terrainBB.second) / 2.0f);
 		// modelMat *= transformAxe;
 		// Upload transform matrices to shader
 		glUniformMatrix4fv(modelMatLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
@@ -95,7 +117,7 @@ void GLState::paintGL() {
 		glUniform3fv(camPosLoc, 1, glm::value_ptr(camPos));
 
 		// Draw the mesh
-		mesh->draw();
+		terrain->draw();
 	}
 
 	glUseProgram(0);
@@ -243,13 +265,13 @@ void GLState::offsetCamera(float offset) {
 }
 
 // Display a given .obj file
-void GLState::showObjFile(const std::string& filename) {
-	// Load the .obj file if it's not already loaded
-	if (!mesh || meshFilename != filename) {
-		mesh = std::unique_ptr<Mesh>(new Mesh(filename));
-		meshFilename = filename;
-	}
-}
+// void GLState::showObjFile(const std::string& filename) {
+// 	// Load the .obj file if it's not already loaded
+// 	if (!mesh || meshFilename != filename) {
+// 		mesh = std::unique_ptr<Mesh>(new Mesh(filename));
+// 		meshFilename = filename;
+// 	}
+// }
 
 // Create shaders and associated state
 void GLState::initShaders() {
@@ -339,7 +361,7 @@ void GLState::readConfig(std::string filename) {
 		// Read .obj filename
 		std::string objName;
 		std::getline(ss, objName);
-		showObjFile(objName);
+		// showObjFile(objName);
 
 		// Read material properties
 		float ambStr, diffStr, specStr, specExp;

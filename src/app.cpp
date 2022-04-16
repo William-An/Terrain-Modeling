@@ -319,7 +319,7 @@ void App::initLayout(std::string configFile) {
 		[=](int index) {
 			GLState& glState = glView->getGLState();
 			try {
-				glState.showObjFile(meshSelectCombo->itemText(index).toStdString());
+				// glState.showObjFile(meshSelectCombo->itemText(index).toStdString());
 			} catch (const std::exception& e) {
 				std::cerr << e.what() << std::endl;
 			}
