@@ -50,8 +50,12 @@ void Mesh::load(std::string filename, bool keepLocalGeometry) {
 
 	functions.push_back("pyramid(x, y, 0, 0, 0, 0, 0.5, -0.3, 1)");
 	functions.push_back("pyramid(x, y, 0, 0, 0, 0, -0.5, 0.3, 1)");
-	functions.push_back("pyramid(x, y, 0, 0, 0, 0, 0, 0, -1)");
-	functions.push_back("perlin(x, y, 2^(N)) * 2^(-N)");
+	functions.push_back("pyramid(x, y, 0, 0, 0, 0.3, -0.3, 0, -1)");
+	functions.push_back("perlin(x, y, 2^(N/2)) * 0.5");
+	functions.push_back("perlin(x, y, 2^(N/2)) * 0.05");
+	functions.push_back("perlin(x, y, 2^(N/2)) * 0.01");
+	functions.push_back("perlin(x, y, 2^(N/2)) * 0.005");
+
 
 	terrain.pushLayer(std::pair(functions, color));
 	terrain.evaluate();

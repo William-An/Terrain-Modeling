@@ -87,6 +87,7 @@ void Terrain::generate() {
     // TODO Just plot the terrain first, layer of sea should be done later
     int num_triangles = (length - 1) * (width - 1) * 2;
 	std::vector<Vertex> vertices(num_triangles * 3);
+    std::vector<std::vector<glm::vec3>> accumulated_normals(width, std::vector<glm::vec3>(length, glm::vec3(0))); // For each vertex
 
     // TODO Just plotting the first layer
     std::pair first_layer = raw_layers[0];
@@ -103,11 +104,16 @@ void Terrain::generate() {
             //  |  /  |
             // c4 --- c3  row
 
+            // Prepare indices for corner vertices
+            glm::vec<2, int> c1_indx(row + 1, col    );
+            glm::vec<2, int> c2_indx(row + 1, col + 1);
+            glm::vec<2, int> c3_indx(row    , col + 1);
+            glm::vec<2, int> c4_indx(row    , col    );
             // Scale to [-1, 1]
-            glm::vec3 corner1(2 * ((double) (row + 1) / width) - 1, 2 * ((double) col / length) - 1, heightmap[row + 1][col]);
-            glm::vec3 corner2(2 * ((double) (row + 1) / width) - 1, 2 * ((double) (col + 1) / length) - 1, heightmap[row + 1][col + 1]);
-            glm::vec3 corner3(2 * ((double) row / width) - 1, 2 * ((double) (col + 1) / length) - 1, heightmap[row][col + 1]);
-            glm::vec3 corner4(2 * ((double) row / width) - 1, 2 * ((double) col / length) - 1, heightmap[row][col]);
+            glm::vec3 corner1(2 * ((double) c1_indx.x / width) - 1, 2 * ((double) c1_indx.y / length) - 1, heightmap[c1_indx.x][c1_indx.y]);
+            glm::vec3 corner2(2 * ((double) c2_indx.x / width) - 1, 2 * ((double) c2_indx.y / length) - 1, heightmap[c2_indx.x][c2_indx.y]);
+            glm::vec3 corner3(2 * ((double) c3_indx.x / width) - 1, 2 * ((double) c3_indx.y / length) - 1, heightmap[c3_indx.x][c3_indx.y]);
+            glm::vec3 corner4(2 * ((double) c4_indx.x / width) - 1, 2 * ((double) c4_indx.y / length) - 1, heightmap[c4_indx.x][c4_indx.y]);
             // Correct axe with height as z to height as y, and y to -z
             double tmp;
             tmp = corner1.z;
@@ -153,13 +159,35 @@ void Terrain::generate() {
             vertices[(row * (length - 1) + col) * 6 + 4].face_norm = face_norm_bot;
             vertices[(row * (length - 1) + col) * 6 + 5].face_norm = face_norm_bot;
 
-            // TODO For testing only, treat smooth as face norm
-            vertices[(row * (length - 1) + col) * 6 + 0].smooth_norm = face_norm_top;
-            vertices[(row * (length - 1) + col) * 6 + 1].smooth_norm = face_norm_top;
-            vertices[(row * (length - 1) + col) * 6 + 2].smooth_norm = face_norm_top;
-            vertices[(row * (length - 1) + col) * 6 + 3].smooth_norm = face_norm_bot;
-            vertices[(row * (length - 1) + col) * 6 + 4].smooth_norm = face_norm_bot;
-            vertices[(row * (length - 1) + col) * 6 + 5].smooth_norm = face_norm_bot;
+            // corner1: one 90 degree for top normal
+            // corner2: two 45 degree for top and bot normal
+            // corner3: one 90 degree for bot normal
+            // corner4: two 45 degree for top and bot normal
+            accumulated_normals[c1_indx.x][c1_indx.y] += face_norm_top;
+            accumulated_normals[c1_indx.x][c1_indx.y] += face_norm_top + face_norm_bot;
+            accumulated_normals[c1_indx.x][c1_indx.y] += face_norm_top;
+            accumulated_normals[c1_indx.x][c1_indx.y] += face_norm_top + face_norm_bot;
+        }
+    }
+
+    // Normalize acculated normals
+    for (auto row_it = accumulated_normals.begin(); row_it != accumulated_normals.end(); row_it++) {
+        auto row = *row_it;
+        for (auto cell_it = row.begin(); cell_it != row.end(); cell_it++) {
+            *cell_it = glm::normalize(*cell_it);
+        }
+    }
+
+    // Assigning smooth normals
+    for (int row = 0; row < width - 1; row++) {
+        for (int col = 0; col < length - 1; col++) {
+            // Same order as c4->c1->c2; c2->c3->c4; two triangles
+            vertices[(row * (length - 1) + col) * 6 + 0].smooth_norm = accumulated_normals[row][col];
+            vertices[(row * (length - 1) + col) * 6 + 1].smooth_norm = accumulated_normals[row + 1][col];
+            vertices[(row * (length - 1) + col) * 6 + 2].smooth_norm = accumulated_normals[row + 1][col + 1];
+            vertices[(row * (length - 1) + col) * 6 + 3].smooth_norm = accumulated_normals[row + 1][col + 1];
+            vertices[(row * (length - 1) + col) * 6 + 4].smooth_norm = accumulated_normals[row + 0][col + 1];
+            vertices[(row * (length - 1) + col) * 6 + 5].smooth_norm = accumulated_normals[row][col];
         }
     }
 

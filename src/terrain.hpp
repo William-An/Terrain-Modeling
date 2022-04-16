@@ -70,6 +70,9 @@ protected:
     std::string name;   // Name of the terrain
 
     // Width (x) and length (y) of the terrain, in number of points to generate
+    // ->: x, ^: y
+    ///       |
+    // TODO want ratio? not just square terrain?
     uint32_t width;
     uint32_t length;
     
