@@ -92,6 +92,7 @@ protected:
                 AddFunction("perlin", perlinNoise, 3);
                 AddFunction("plane", plane, 5);
                 AddFunction("pyramid", pyramid, 9);
+                AddFunction("normal", normal, 4);
             };
 
             static void setSeed(int64_t s) {seed = s;};
@@ -118,6 +119,12 @@ protected:
             // c1c2c3c4: corner height in CW direction start from left top
             // xyz: pyramid apex position
             static double pyramid(const double* xyc1c2c3c4xyz);
+
+            // Plot as normal distribution
+            // xy: point position for height
+            // sx: standard dev for x axis
+            // sy: standard dev for y axis
+            static double normal(const double* xysxsy);
 
             // TODO Allow loading object file?
     };

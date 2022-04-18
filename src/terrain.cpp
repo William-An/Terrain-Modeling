@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <glm/gtx/string_cast.hpp>
+#include <cmath>
 
 Terrain::Terrain() {
 
@@ -337,4 +338,25 @@ double Terrain::TerrainFuncParser::pyramid(const double* xyc1c2c3c4xyz) {
         }
     }
     return z;
+}
+
+double Terrain::TerrainFuncParser::normal(const double* xysxsy) {
+    double x = xysxsy[0];
+    double y = xysxsy[1];
+    double sx = xysxsy[2];
+    double sy = xysxsy[3];
+
+    double fx = 1.0f / (sx * sqrt(2 * M_PI)) * exp(-0.5 * pow(x / sx, 2));
+    double fy = 1.0f / (sy * sqrt(2 * M_PI)) * exp(-0.5 * pow(y / sy, 2));
+    double max_fx = 1.0f / (sx * sqrt(2 * M_PI)) * exp(0);
+    double max_fy = 1.0f / (sy * sqrt(2 * M_PI)) * exp(0);
+
+    // Scaling to [0, 1];
+    fx /= max_fx;
+    fy /= max_fy;
+
+    if (fx*fy > 1)
+        printf("%.2f\n", fx*fy);
+
+    return fx * fy;
 }

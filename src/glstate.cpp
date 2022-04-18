@@ -61,9 +61,12 @@ void GLState::initializeGL() {
 	std::vector<std::string> functions;
 	glm::vec3 color(12, 323, 23);
 
-	functions.push_back("pyramid(x, y, 0, 0, 0, 0, 0.5, -0.3, 1)");
-	functions.push_back("pyramid(x, y, 0, 0, 0, 0, -0.5, 0.3, 1)");
-	functions.push_back("pyramid(x, y, 0, 0, 0, 0.3, -0.3, 0, -1)");
+	// functions.push_back("pyramid(x, y, 0, 0, 0, 0, 0.5, -0.3, 1)");
+	// functions.push_back("pyramid(x, y, 0, 0, 0, 0, -0.5, 0.3, 1)");
+	// functions.push_back("pyramid(x, y, 0, 0, 0, 0.3, -0.3, 0, -1)");
+	functions.push_back("normal(x - 0.5, y + 0.3, 0.5, 0.5)");
+	functions.push_back("normal(x + 0.5, y - 0.3, 0.5, 0.5)");
+	functions.push_back("-normal(x, y, 0.5, 0.5)");
 	functions.push_back("perlin(x, y, 2^(N/2)) * 0.5");
 	functions.push_back("perlin(x, y, 2^(N/2)) * 0.05");
 	functions.push_back("perlin(x, y, 2^(N/2)) * 0.01");
