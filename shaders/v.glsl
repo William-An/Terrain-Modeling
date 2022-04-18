@@ -22,6 +22,19 @@ uniform int shadingMode;	// Shading mode
 const int LIGHTTYPE_POINT = 0;			// Point light
 const int LIGHTTYPE_DIRECTIONAL = 1;	// Directional light
 
+// Layers configuration
+const int MAX_LAYERS = 10;
+struct PhongConfig {
+	float ambient;
+	float diffuse;
+	float specular;
+	float exponent;
+	vec3  color;
+	int   enable;
+	int   drawSurface;
+	int   coverBottom;
+};
+
 // Light information
 struct LightData {
 	bool enabled;	// Whether the light is on
@@ -34,6 +47,10 @@ struct LightData {
 const int MAX_LIGHTS = 8;
 layout (std140) uniform LightBlock {
 	LightData lights [MAX_LIGHTS];
+};
+
+layout (std140) uniform PhongConfigBlock {
+	PhongConfig configs [MAX_LAYERS];
 };
 
 uniform vec3 camPos;			// World-space camera position

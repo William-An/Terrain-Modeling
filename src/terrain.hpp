@@ -21,6 +21,23 @@ public:
     // Terrain(std::ifstream& config_file); // TODO
 	~Terrain(){}
 
+    void initGL();
+	static const int MAX_LAYERS = 10;
+
+    // Material configuration
+    struct PhongConfig {
+        float ambient;
+        float diffuse;
+        float specular;
+        float exponent;
+        glm::vec3 color;
+        int   enable;      // Whether to draw the mesh at all
+        int   drawSurface; // Whether to draw in surface form
+        int   coverBottom; // Whether to overwrite area below it with the config
+        PhongConfig(float amb, float diff, float spec, float exponent, glm::vec3 c, int enable=1, int drawSurface=1, int coverBottom = 0);
+        PhongConfig();
+    };
+
     // Load config file
     void load(std::string& config_file_path);
     void load(std::ifstream& config_file);
@@ -52,11 +69,13 @@ public:
     uint32_t getWidth() {return width;};
     uint32_t getLength() {return length;};
 
-    void insertLayer(int pos, std::pair<std::vector<std::string>, glm::vec3> layer) {
+    void setShader(GLuint s) {shader = s;};
+
+    void insertLayer(int pos, std::pair<std::vector<std::string>, PhongConfig> layer) {
         auto it = layers_functions.begin();
         layers_functions.insert(it + pos, layer);
     };
-    void pushLayer(std::pair<std::vector<std::string>, glm::vec3> layer) {
+    void pushLayer(std::pair<std::vector<std::string>, PhongConfig> layer) {
         layers_functions.push_back(layer);
     };
     void eraseLayer(int pos) {
@@ -75,17 +94,26 @@ protected:
     // TODO want ratio? not just square terrain?
     uint32_t width;
     uint32_t length;
+
+    // Vertex structure for rendering
+    struct Vertex {
+		glm::vec3 pos;			// Position
+		glm::vec3 face_norm;	// Face normal
+		glm::vec3 smooth_norm;	// Smoothed normal
+		// Vertex();
+	};
     
     // Layers of terrain
-    // double[][]: layer height
-    // glm::vec3 : layer color
+    // double[][]   : layer height
+    // PhongConfig  : layer lighting configuration
     // first one is the terrain and color is ignored
-    std::vector<std::pair<double**, glm::vec3>> raw_layers;
+    std::vector<std::pair<double**, PhongConfig>> raw_layers;
 
     // Function controlling each layer
-    std::vector<std::pair<std::vector<std::string>, glm::vec3>> layers_functions;
+    std::vector<std::pair<std::vector<std::string>, PhongConfig>> layers_functions;
 
-    // TODO Use thread to speed up?
+    // TODO Add light configuration
+
     class TerrainFuncParser : public FunctionParser {
         public:
             TerrainFuncParser() {
@@ -131,14 +159,6 @@ protected:
 
     TerrainFuncParser terrainParser;
 
-    // Vertex structure for rendering
-    struct Vertex {
-		glm::vec3 pos;			// Position
-		glm::vec3 face_norm;	// Face normal
-		glm::vec3 smooth_norm;	// Smoothed normal
-		// Vertex();
-	};
-
     void release();		// Release OpenGL resources
 
 	// Bounding box
@@ -146,9 +166,23 @@ protected:
 	glm::vec3 maxBB;
 
 	// OpenGL resources
+    static const GLuint BIND_PT = 1;
+	GLuint shader;	// GPU shader program
 	GLuint vao;		// Vertex array object
 	GLuint vbuf;	// Vertex buffer
 	GLsizei vcount;	// Number of vertices
+    
+    GLuint ambStrLoc;
+    GLuint diffStrLoc;
+    GLuint specStrLoc;
+    GLuint specExpLoc;
+    GLuint objColorLoc;
+    GLuint drawSurfaceLoc;
+    GLuint coverBottomLoc;
+
+    GLuint phongConfigsUBO;
+
+    PhongConfig testConfig;
 };
 
 #endif // !__TERRAIN_HPP__

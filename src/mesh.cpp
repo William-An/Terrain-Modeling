@@ -57,7 +57,7 @@ void Mesh::load(std::string filename, bool keepLocalGeometry) {
 	functions.push_back("perlin(x, y, 2^(N/2)) * 0.005");
 
 
-	terrain.pushLayer(std::pair(functions, color));
+	// terrain.pushLayer(std::pair(functions, color));
 	terrain.evaluate();
 	// terrain.printMatrix(0);
 	terrain.generate();

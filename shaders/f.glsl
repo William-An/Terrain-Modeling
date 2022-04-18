@@ -21,19 +21,38 @@ struct LightData {
 	vec3 color;		// Color of light
 };
 
+// Layers configuration
+const int MAX_LAYERS = 10;
+struct PhongConfig {
+	float ambient;
+	float diffuse;
+	float specular;
+	float exponent;
+	vec3   color;
+	int   enable;
+	int   drawSurface;
+	int   coverBottom;
+};
+
 // Array of lights
 const int MAX_LIGHTS = 8;
 layout (std140) uniform LightBlock {
 	LightData lights [MAX_LIGHTS];
 };
 
+layout (std140) uniform PhongConfigBlock {
+	PhongConfig configs [MAX_LAYERS];
+};
+
 uniform int shadingMode;		// Which shading mode
 uniform vec3 camPos;			// World-space camera position
-uniform vec3 objColor;			// Object color
 uniform float ambStr;			// Ambient strength
 uniform float diffStr;			// Diffuse strength
 uniform float specStr;			// Specular strength
 uniform float specExp;			// Specular exponent
+uniform vec3 objColor;			// Object color
+uniform bool drawSurface;		// If draw the surface
+uniform bool coverBottom;		// If dye the area below it to the config
 
 void main() {
 	if (shadingMode == SHADINGMODE_NORMALS)
@@ -50,7 +69,9 @@ void main() {
 				// Normalized
 				vec3 norm = normalize(fragNorm);
 				// Add light components
-				vec3 ambient = ambStr * lights[i].color;
+				// TODO
+				// vec3 ambient = ambStr * lights[i].color;
+				vec3 ambient = configs[0].ambient * lights[i].color;
 
 				// Compute light direction and diffuse
 				vec3 lightDir = vec3(0);
@@ -59,14 +80,18 @@ void main() {
 				} else if (lights[i].type == LIGHTTYPE_DIRECTIONAL) {
 					lightDir = normalize(lights[i].pos);
 				}
-				vec3 diffuse = diffStr * max(dot(norm, lightDir), 0) * lights[i].color;
+				// vec3 diffuse = diffStr * max(dot(norm, lightDir), 0) * lights[i].color;
+				vec3 diffuse = configs[0].diffuse * max(dot(norm, lightDir), 0) * lights[i].color;
 
 				// Specular component
 				vec3 reflection = normalize(reflect(-lightDir, norm));
 				vec3 viewDir    = normalize(camPos - fragPos);
-				vec3 specular = specStr * pow(max(dot(viewDir, reflection), 0), specExp) * lights[i].color;
+				// vec3 specular = specStr * pow(max(dot(viewDir, reflection), 0), specExp) * lights[i].color;
+				
+				vec3 specular = configs[0].specular * pow(max(dot(viewDir, reflection), 0), configs[0].exponent) * lights[i].color;
 
-				outCol += (ambient + diffuse + specular) * objColor;
+				// outCol += (ambient + diffuse + specular) * objColor;
+				outCol += (ambient + diffuse + specular) * configs[0].color;
 			}
 		}
 	} else if (shadingMode == SHADINGMODE_GOURAUD) {

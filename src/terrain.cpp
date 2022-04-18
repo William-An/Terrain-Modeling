@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <glm/gtx/string_cast.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <cmath>
 
 Terrain::Terrain() {
@@ -10,6 +11,25 @@ Terrain::Terrain() {
 
 Terrain::Terrain(std::string& config_file_path) {
     this->load(config_file_path);
+}
+
+void Terrain::initGL() {
+    // Create the uniform buffer and fill with empty layer phong config
+	std::vector<PhongConfig> emptyLayerConfigs(MAX_LAYERS);
+
+	glGenBuffers(1, &phongConfigsUBO);
+	glBindBufferBase(GL_UNIFORM_BUFFER, BIND_PT, phongConfigsUBO);
+	glBindBuffer(GL_UNIFORM_BUFFER, phongConfigsUBO);
+	glBufferData(GL_UNIFORM_BUFFER, emptyLayerConfigs.size() * sizeof(PhongConfig), emptyLayerConfigs.data(), GL_STATIC_DRAW);
+
+	// Set the binding point index of the buffer
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    // Bind config block to the UBO
+    glUseProgram(shader);
+    GLuint uniformConfigBlocIndx = glGetUniformBlockIndex(shader, "PhongConfigBlock");
+    glUniformBlockBinding(shader, uniformConfigBlocIndx, BIND_PT);
+    glUseProgram(0);
 }
 
 void Terrain::load(std::string& config_file_path) {
@@ -39,8 +59,8 @@ void Terrain::evaluate() {
     terrainParser.configNoiseGnerators();
     
     for (auto it = layers_functions.begin(); it != layers_functions.end(); it++) {
-        std::pair<std::vector<std::string>, glm::vec3> layer_functions = *it;
-        glm::vec3 color = layer_functions.second;
+        std::pair<std::vector<std::string>, PhongConfig> layer_functions = *it;
+        auto color = layer_functions.second;
         std::vector<std::string> functions = layer_functions.first;
 
         // Initialize 2D matrix holding terrain height
@@ -90,10 +110,12 @@ void Terrain::generate() {
 	std::vector<Vertex> vertices(num_triangles * 3);
     std::vector<std::vector<glm::vec3>> accumulated_normals(width, std::vector<glm::vec3>(length, glm::vec3(0))); // For each vertex
 
+    // THIS!!
+    // TODO For loop to load all layer into the shader
     // TODO Just plotting the first layer
     std::pair first_layer = raw_layers[0];
     double **heightmap = first_layer.first;
-    glm::vec3 color = first_layer.second;
+    PhongConfig config = first_layer.second;
 
     for (int row = 0; row < width - 1; row++) {
         for (int col = 0; col < length - 1; col++) {
@@ -215,11 +237,21 @@ void Terrain::generate() {
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(2 * sizeof(glm::vec3)));
 
+    // Pass the PhongConfig
+    glBindBuffer(GL_UNIFORM_BUFFER, phongConfigsUBO);
+    config.color /= 255.0f;
+    // 0 as the first one, need to change in a loop
+	glBufferSubData(GL_UNIFORM_BUFFER, 0 * sizeof(PhongConfig),
+		sizeof(PhongConfig), &config);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void Terrain::draw() {
+    // TODO: Also visualizing the surfaces?
+    // TODO: Load and draw each layer with its own config
 	glBindVertexArray(vao);
 	glDrawArrays(GL_TRIANGLES, 0, vcount);
 	glBindVertexArray(0);
@@ -234,9 +266,9 @@ void Terrain::printMatrix(int indx) {
 
     std::pair raw_layer = raw_layers[indx];
     double **matrix = raw_layer.first;
-    glm::vec3 color = raw_layer.second;
+    PhongConfig color = raw_layer.second;
 
-    std::cout << "Color of layer: " << glm::to_string(color) << std::endl;
+    // std::cout << "Color of layer: " << glm::to_string(color) << std::endl;
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < length; j++) {
             printf("%.4f ", matrix[i][j]);
@@ -348,8 +380,8 @@ double Terrain::TerrainFuncParser::normal(const double* xysxsy) {
 
     double fx = 1.0f / (sx * sqrt(2 * M_PI)) * exp(-0.5 * pow(x / sx, 2));
     double fy = 1.0f / (sy * sqrt(2 * M_PI)) * exp(-0.5 * pow(y / sy, 2));
-    double max_fx = 1.0f / (sx * sqrt(2 * M_PI)) * exp(0);
-    double max_fy = 1.0f / (sy * sqrt(2 * M_PI)) * exp(0);
+    double max_fx = 1.0f / (sx * sqrt(2 * M_PI));
+    double max_fy = 1.0f / (sy * sqrt(2 * M_PI));
 
     // Scaling to [0, 1];
     fx /= max_fx;
@@ -360,3 +392,23 @@ double Terrain::TerrainFuncParser::normal(const double* xysxsy) {
 
     return fx * fy;
 }
+
+Terrain::PhongConfig::PhongConfig() : 
+    ambient(0),
+    diffuse(0),
+    specular(0),
+    exponent(0),
+    color(glm::vec3(0)),
+    enable(false),
+    drawSurface(false),
+    coverBottom(false) {}
+
+Terrain::PhongConfig::PhongConfig(float amb, float diff, float spec, float exponent, glm::vec3 c, int en, int drawSurface, int coverBottom) : 
+    ambient(amb),
+    diffuse(diff),
+    specular(spec),
+    exponent(exponent),
+    color(c),
+    enable(en),
+    drawSurface(drawSurface),
+    coverBottom(coverBottom) {}

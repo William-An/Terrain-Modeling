@@ -54,12 +54,18 @@ void GLState::initializeGL() {
 	terrain = std::unique_ptr<Terrain>(new Terrain());
 
 	// TODO: Initialize for testing purpose only
+	terrain->setShader(shader);
+	terrain->initGL();
 	terrain->setSize(100, 100);
 	terrain->setSeed(1);
 	std::string name("Test");
 	terrain->setName(name);
 	std::vector<std::string> functions;
-	glm::vec3 color(12, 323, 23);
+	std::vector<std::string> seaFuncs;
+	// Terrain::PhongConfig color(0.343, 0.68, 0.66, 5.66, glm::vec3(190, 170, 160));
+	Terrain::PhongConfig config(0.001, 0.46, 1, 8, glm::vec3(255, 190, 0));
+	Terrain::PhongConfig seaConfig(0.001, 0.46, 1, 8, glm::vec3(100, 100, 255));
+
 
 	// functions.push_back("pyramid(x, y, 0, 0, 0, 0, 0.5, -0.3, 1)");
 	// functions.push_back("pyramid(x, y, 0, 0, 0, 0, -0.5, 0.3, 1)");
@@ -72,9 +78,11 @@ void GLState::initializeGL() {
 	functions.push_back("perlin(x, y, 2^(N/2)) * 0.01");
 	functions.push_back("perlin(x, y, 2^(N/2)) * 0.005");
 
+	terrain->pushLayer(std::pair(functions, config));
 
-	terrain->pushLayer(std::pair(functions, color));
-
+	seaFuncs.push_back("plane(x, y, 0.2, 0.2, 0.2, 0.2)");
+	terrain->pushLayer(std::pair(seaFuncs, seaConfig));
+	
 	// TODO: Need a button to call regenerate
 	terrain->evaluate();
 	terrain->generate();
