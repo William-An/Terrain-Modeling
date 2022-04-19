@@ -65,7 +65,8 @@ void GLState::initializeGL() {
 	std::vector<std::string> deepSeaFuncs;
 	// Terrain::PhongConfig color(0.343, 0.68, 0.66, 5.66, glm::vec3(190, 170, 160));
 	Terrain::PhongConfig config(0.001, 0.46, 1, 8, glm::vec3(255, 190, 0));
-	Terrain::PhongConfig seaConfig(0.001, 0.46, 1, 8, glm::vec3(100, 100, 255));
+	Terrain::PhongConfig seaConfig(0.343, 0.68, 0.66, 5.66, glm::vec3(190, 170, 160));
+	Terrain::PhongConfig deepSeaConfig(0.007, 0.18, 1, 32, glm::vec3(120, 120, 120));
 
 
 	// functions.push_back("pyramid(x, y, 0, 0, 0, 0, 0.5, -0.3, 1)");
@@ -78,13 +79,13 @@ void GLState::initializeGL() {
 	functions.push_back("perlin(x, y, 2^(N/2)) * 0.05");
 	functions.push_back("perlin(x, y, 2^(N/2)) * 0.01");
 	functions.push_back("perlin(x, y, 2^(N/2)) * 0.005");
-
 	terrain->pushLayer(std::pair(functions, config));
 
-	seaFuncs.push_back("perlin(x, y, 2^(N/2)) * 0.5 + 0.5");
-	deepSeaFuncs.push_back("plane(x, y, -0.3, -0.3, -0.3)");
+	seaFuncs.push_back("perlin(x, y, 2^4) * 0.5 + 0.5");
+	deepSeaFuncs.push_back("perlin(x, y, 2^4)) * 0.5");
+	
 	terrain->pushLayer(std::pair(seaFuncs, seaConfig));
-	terrain->pushLayer(std::pair(deepSeaFuncs, seaConfig));
+	terrain->pushLayer(std::pair(deepSeaFuncs, deepSeaConfig));
 	
 	// TODO: Need a button to call regenerate
 	terrain->evaluate();

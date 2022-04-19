@@ -26,15 +26,23 @@ public:
 
     // Material configuration
     struct PhongConfig {
-        float ambient;
-        float diffuse;
-        float specular;
-        float exponent;
+        GLfloat ambient;
+        GLfloat diffuse;
+        GLfloat specular;
+        GLfloat exponent;
         glm::vec3 color;
-        int   enable;      // Whether to draw the mesh at all
-        int   drawSurface; // Whether to draw in surface form
-        int   coverBottom; // Whether to overwrite area below it with the config
-        PhongConfig(float amb, float diff, float spec, float exponent, glm::vec3 c, int enable=1, int drawSurface=1, int coverBottom = 0);
+        GLint   enable;      // Whether to draw the mesh at all
+        GLint   drawSurface; // Whether to draw in surface form
+        GLint   coverBottom; // Whether to overwrite area below it with the config
+        // Manually pad to multiple of vec4
+        // Round to 48 as the config has size of 40
+        // GLSL requires struct size to be padded to a
+        // multiple of vec4, or 12 bytes
+        // see https://learnopengl.com/Advanced-OpenGL/Advanced-GLSL
+        // On Uniform buffer objects section
+        GLint   pad1;
+        GLint   pad2;
+        PhongConfig(float amb, float diff, float spec, float exponent, glm::vec3 c, int enable=1, int drawSurface=1, int coverBottom=0);
         PhongConfig();
     };
 

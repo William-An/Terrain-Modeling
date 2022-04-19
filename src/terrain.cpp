@@ -64,10 +64,10 @@ void Terrain::evaluate() {
     // Discard all previous calculation
     raw_layers.clear();
     
-    for (auto it = layers_functions.begin(); it != layers_functions.end(); it++) {
+    for (auto it = layers_functions.begin(); it < layers_functions.end(); it++) {
         printf("Evaluating a new layer\n");
         std::pair<std::vector<std::string>, PhongConfig> layer_functions = *it;
-        auto color = layer_functions.second;
+        PhongConfig color = layer_functions.second;
         std::vector<std::string> functions = layer_functions.first;
 
         // Initialize 2D matrix holding terrain height
@@ -124,7 +124,6 @@ void Terrain::generate() {
     // TODO Just plotting the first layer
     std::pair first_layer = raw_layers[0];
     float **heightmap = first_layer.first;
-    PhongConfig config = first_layer.second;
 
     for (int row = 0; row < width - 1; row++) {
         for (int col = 0; col < length - 1; col++) {
@@ -251,38 +250,54 @@ void Terrain::generate() {
 
     // Pass the PhongConfig
     glBindBuffer(GL_UNIFORM_BUFFER, phongConfigsUBO);
-    config.color /= 255.0f;
-    // TODO 0 as the first one, need to change in a loop
-	glBufferSubData(GL_UNIFORM_BUFFER, 0 * sizeof(PhongConfig),
-		sizeof(PhongConfig), &config);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    for (int i = 0; i < raw_layers.size(); i++) {
+        PhongConfig config = raw_layers[i].second;
+        config.color /= 255.0f;
+
+        glBufferSubData(GL_UNIFORM_BUFFER, i * sizeof(PhongConfig),
+            sizeof(PhongConfig), &config);
+
+        printf("Size of %d\n", sizeof(PhongConfig));
+        printf("Details: %s, enabled: %d\n", glm::to_string(config.color).c_str(), config.enable);
+        printf("Finish binding UBO for layer %d\n", i);
+    }
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 void Terrain::draw() {
     // TODO: Also visualizing the surfaces?
-    // TODO: Load and draw each layer with its own config
-    // TODO: When drawing, load each heightmap for surface as texture
-    // TODO: Then draw correspondingly
-
-    // TODO Use 2D array texture to pass in the different layers?
-    // TODO Need to serialize 2D dynamic array
-    GLfloat** raw = raw_layers[1].first;
 
     // Serialization
-    GLfloat* ptr = new GLfloat[width * length];
-    for (int i = 0; i < width; i++)
-        for (int j = 0; j < length; j++)
-            ptr[i * width + j] = raw[i][j];
+    int layer_count = raw_layers.size();
+    int layer_size  = width * length;
+    GLfloat* ptr = new GLfloat[width * length * layer_count];
+    for (int layer_indx = 0; layer_indx < layer_count; layer_indx++) {
+        GLfloat** raw_layer = raw_layers[layer_indx].first;
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < length; j++) {
+                ptr[layer_indx * layer_size + i * width + j] = raw_layer[i][j];
+            }
+        }
+    }
 
-    glBindTexture(GL_TEXTURE_2D, heightMap);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // Passing texture
+    glBindTexture(GL_TEXTURE_2D_ARRAY, heightMap);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     // Float version
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, length, 0, GL_RED, GL_FLOAT, ptr);
+    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_R32F, width, length, layer_count, 0, GL_RED, GL_FLOAT, ptr);
 
+    GLuint sampler_loc = glGetUniformLocation(shader, "heightMap");
+    glUniform1i(sampler_loc, 0);
+
+    // Set the initial phong to use
+    GLuint initPhongConfigLoc = glGetUniformLocation(shader, "originalPhongIndx");
+    glUniform1i(initPhongConfigLoc, 0);
+
+    // Draw the terrain
 	glBindVertexArray(vao);
 	glDrawArrays(GL_TRIANGLES, 0, vcount);
 	glBindVertexArray(0);
@@ -429,10 +444,7 @@ Terrain::PhongConfig::PhongConfig() :
     diffuse(0),
     specular(0),
     exponent(0),
-    color(glm::vec3(0)),
-    enable(false),
-    drawSurface(false),
-    coverBottom(false) {}
+    color(glm::vec3(0)) {}
 
 Terrain::PhongConfig::PhongConfig(float amb, float diff, float spec, float exponent, glm::vec3 c, int en, int drawSurface, int coverBottom) : 
     ambient(amb),

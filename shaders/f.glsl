@@ -55,7 +55,8 @@ uniform vec3 objColor;			// Object color
 uniform bool drawSurface;		// If draw the surface
 uniform bool coverBottom;		// If dye the area below it to the config
 
-uniform sampler2D heightMap;
+uniform sampler2DArray heightMap;
+uniform int originalPhongIndx;	// The initial phong config to use for the terrainbool
 
 void main() {
 	if (shadingMode == SHADINGMODE_NORMALS)
@@ -67,14 +68,40 @@ void main() {
 		outCol = vec3(0.0);
 
 		// TODO TESTING
-		// vec4 tmp = texture2D(heightMap, vec2(fragPos.x, -fragPos.z));
-		// outCol = tmp.r * vec4(0.4, 1.0, 0.8, 1.0).rgb;
-		// outCol = 4 * fragPos.x * vec4(0.4, 1.0, 0.8, 1.0).rgb;
+		// int i = 1;
+		// if (configs[i].enable == 1)
+		// 	outCol = configs[i].color;
+		// else
+		// 	outCol = vec3(1.0, 0.3, 0.2);
 		// return;
 		// End testing
 
-		vec4 texValue = texture2D(heightMap, vec2(fragPos.x, -fragPos.z));
-		
+		// Determine which region this frag lies in and use the 
+		// corresponding config
+		int configIdx = 0;
+		bool foundPhong2Use = false;
+		// Starts from the bottom, as we treat the frag below the surface
+		// to be the corresponding Phong Config
+		for (configIdx = MAX_LAYERS - 1; configIdx >= 0; configIdx--) {
+			PhongConfig config = configs[configIdx];
+
+			// Skip disable surface
+			if (configIdx == originalPhongIndx || config.enable == 0)
+				continue;
+			
+			// Below the surface, choose this config
+			vec4 texValue = texture(heightMap, vec3(fragPos.x, -fragPos.z, configIdx));
+			float height = texValue.r;
+			if (localFragPos.y < height) {
+				foundPhong2Use = true;
+				break;
+			}
+		}
+
+		// If not found, use own texture
+		if (!foundPhong2Use)
+			configIdx = originalPhongIndx;
+
 		for (int i = 0; i < MAX_LIGHTS; i++) {
 			if (!lights[i].enabled) {
 				continue;
@@ -82,15 +109,7 @@ void main() {
 				// Normalized
 				vec3 norm = normalize(fragNorm);
 				// Add light components
-				// TODO
-				// vec3 ambient = ambStr * lights[i].color;
-				float height = texValue.r;
-				vec3 ambient = vec3(0.0);
-				if (localFragPos.y < height) {
-					ambient = configs[0].ambient * lights[i].color;
-				} else {
-					ambient = height * lights[i].color;
-				}
+				vec3 ambient = configs[configIdx].ambient * lights[i].color;
 
 				// Compute light direction and diffuse
 				vec3 lightDir = vec3(0);
@@ -100,17 +119,17 @@ void main() {
 					lightDir = normalize(lights[i].pos);
 				}
 				// vec3 diffuse = diffStr * max(dot(norm, lightDir), 0) * lights[i].color;
-				vec3 diffuse = configs[0].diffuse * max(dot(norm, lightDir), 0) * lights[i].color;
+				vec3 diffuse = configs[configIdx].diffuse * max(dot(norm, lightDir), 0) * lights[i].color;
 
 				// Specular component
 				vec3 reflection = normalize(reflect(-lightDir, norm));
 				vec3 viewDir    = normalize(camPos - fragPos);
 				// vec3 specular = specStr * pow(max(dot(viewDir, reflection), 0), specExp) * lights[i].color;
 				
-				vec3 specular = configs[0].specular * pow(max(dot(viewDir, reflection), 0), configs[0].exponent) * lights[i].color;
+				vec3 specular = configs[configIdx].specular * pow(max(dot(viewDir, reflection), 0), configs[configIdx].exponent) * lights[i].color;
 
 				// outCol += (ambient + diffuse + specular) * objColor;
-				outCol += (ambient + diffuse + specular) * configs[0].color;
+				outCol += (ambient + diffuse + specular) * configs[configIdx].color;
 			}
 		}
 	} else if (shadingMode == SHADINGMODE_GOURAUD) {
