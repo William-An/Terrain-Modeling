@@ -86,10 +86,10 @@ void main() {
 				// vec3 ambient = ambStr * lights[i].color;
 				float height = texValue.r;
 				vec3 ambient = vec3(0.0);
-				if (localFragPos.x < height) {
+				if (localFragPos.y < height) {
 					ambient = configs[0].ambient * lights[i].color;
 				} else {
-					ambient = 0.5 * lights[i].color;
+					ambient = height * lights[i].color;
 				}
 
 				// Compute light direction and diffuse

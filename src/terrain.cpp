@@ -264,65 +264,28 @@ void Terrain::draw() {
     // TODO: When drawing, load each heightmap for surface as texture
     // TODO: Then draw correspondingly
 
-    // Create texture
-    // TODO Heightmap not passed in as texture
-    // GLfloat** ptr = new GLfloat*[width * length];
-    // for (int i = 0; i < width * length; i++)
-    //     ptr[i] = new GLfloat[4];
-    // GLfloat** raw = raw_layers[1].first;
-    // for (int i = 0; i < width; i++) {
-    //     for (int j = 0; j < length; j++) {
-    //         ptr[i * width + j][0] = raw[i][j];
-    //         ptr[i * width + j][1] = raw[i][j];
-    //         ptr[i * width + j][2] = raw[i][j];
-    //         ptr[i * width + j][3] = raw[i][j];
-    //     }
-    // }
-
-    // for (int i = 0; i < width; i++) {
-    //     for (int j = 0; j < length; j++) {
-    //         ptr[i * width + j][0] = raw[i][j];
-    //         ptr[i * width + j][1] = raw[i][j];
-    //         ptr[i * width + j][2] = raw[i][j];
-    //         ptr[i * width + j][3] = raw[i][j];
-    //     }
-    // }
-
-    // Unsigned byte
-    GLubyte ptr[20][20];
+    // TODO Use 2D array texture to pass in the different layers?
+    // TODO Need to serialize 2D dynamic array
     GLfloat** raw = raw_layers[1].first;
-    for (int i = 0; i < width; i++) {
-        for (int j = 0; j < length; j++) {
-            int c = raw[i][j] * 255.0;
-            printf("c = %d\n", c);
-            ptr[i][j] = (GLubyte) c;
-        }
-    }
 
-    printf("ptr: %d\n", ptr[10][10]);
+    // Serialization
+    GLfloat* ptr = new GLfloat[width * length];
+    for (int i = 0; i < width; i++)
+        for (int j = 0; j < length; j++)
+            ptr[i * width + j] = raw[i][j];
 
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glGenTextures(1, &heightMap);
     glBindTexture(GL_TEXTURE_2D, heightMap);
-    
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, length, 0, GL_RED, GL_FLOAT, ptr);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 20, 20, 0, GL_RED, GL_UNSIGNED_BYTE, ptr);
 
-    GLuint heightMapLoc = glGetUniformLocation(shader, "heightMap");
-    printf("Uniform heightmap loc: %d\n", heightMapLoc);
-    glUniform1i(heightMapLoc, 0);
-    
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, heightMap);
+    // Float version
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, length, 0, GL_RED, GL_FLOAT, ptr);
 
 	glBindVertexArray(vao);
 	glDrawArrays(GL_TRIANGLES, 0, vcount);
 	glBindVertexArray(0);
-    // printMatrix(1);
 }
 
 void Terrain::printMatrix(int indx) {
