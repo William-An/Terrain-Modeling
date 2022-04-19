@@ -116,137 +116,142 @@ void Terrain::generate() {
     // TODO from raw_layers, generate faces, flat norms, and smooth norms
     // TODO Just plot the terrain first, layer of sea should be done later
     int num_triangles = (length - 1) * (width - 1) * 2;
-	std::vector<Vertex> vertices(num_triangles * 3);
-    std::vector<std::vector<glm::vec3>> accumulated_normals(width, std::vector<glm::vec3>(length, glm::vec3(0))); // For each vertex
 
-    // THIS!!
-    // TODO For loop to load all layer into the shader
-    // TODO Just plotting the first layer
-    std::pair first_layer = raw_layers[0];
-    float **heightmap = first_layer.first;
+    for (int layer_idx = 0; layer_idx < raw_layers.size(); layer_idx++) {
+        // If not enable or no need to draw, skip the layer
+        std::pair layer = raw_layers[layer_idx];
+        PhongConfig config = layer.second;
+        if (config.enable == 0 || config.drawSurface == 0)
+            continue;
 
-    for (int row = 0; row < width - 1; row++) {
-        for (int col = 0; col < length - 1; col++) {
-            // Add two triangle in the sqaure formed by
-            // matrix[row][col], matrix[row + 1][col], matrix[row + 1][col + 1], matrix[row, col + 1]
+        std::vector<Vertex> vertices(num_triangles * 3);
+        std::vector<std::vector<glm::vec3>> accumulated_normals(width, std::vector<glm::vec3>(length, glm::vec3(0))); // For each vertex
 
-            // col   col + 1
-            // c1 --- c2  row + 1
-            //  |  /  |
-            // c4 --- c3  row
+        float **heightmap = layer.first;
 
-            // Prepare indices for corner vertices
-            glm::vec<2, int> c1_indx(row + 1, col    );
-            glm::vec<2, int> c2_indx(row + 1, col + 1);
-            glm::vec<2, int> c3_indx(row    , col + 1);
-            glm::vec<2, int> c4_indx(row    , col    );
-            // Scale to [-1, 1]
-            glm::vec3 corner1(2 * ((double) c1_indx.x / width) - 1, 2 * ((double) c1_indx.y / length) - 1, heightmap[c1_indx.x][c1_indx.y]);
-            glm::vec3 corner2(2 * ((double) c2_indx.x / width) - 1, 2 * ((double) c2_indx.y / length) - 1, heightmap[c2_indx.x][c2_indx.y]);
-            glm::vec3 corner3(2 * ((double) c3_indx.x / width) - 1, 2 * ((double) c3_indx.y / length) - 1, heightmap[c3_indx.x][c3_indx.y]);
-            glm::vec3 corner4(2 * ((double) c4_indx.x / width) - 1, 2 * ((double) c4_indx.y / length) - 1, heightmap[c4_indx.x][c4_indx.y]);
-            // Correct axe with height as z to height as y, and y to -z
-            double tmp;
-            tmp = corner1.z;
-            corner1.z = -corner1.y;
-            corner1.y = tmp;
+        for (int row = 0; row < width - 1; row++) {
+            for (int col = 0; col < length - 1; col++) {
+                // Add two triangle in the sqaure formed by
+                // matrix[row][col], matrix[row + 1][col], matrix[row + 1][col + 1], matrix[row, col + 1]
 
-            tmp = corner2.z;
-            corner2.z = -corner2.y;
-            corner2.y = tmp;
+                // col   col + 1
+                // c1 --- c2  row + 1
+                //  |  /  |
+                // c4 --- c3  row
 
-            tmp = corner3.z;
-            corner3.z = -corner3.y;
-            corner3.y = tmp;
+                // Prepare indices for corner vertices
+                glm::vec<2, int> c1_indx(row + 1, col    );
+                glm::vec<2, int> c2_indx(row + 1, col + 1);
+                glm::vec<2, int> c3_indx(row    , col + 1);
+                glm::vec<2, int> c4_indx(row    , col    );
+                // Scale to [-1, 1]
+                glm::vec3 corner1(2 * ((double) c1_indx.x / width) - 1, 2 * ((double) c1_indx.y / length) - 1, heightmap[c1_indx.x][c1_indx.y]);
+                glm::vec3 corner2(2 * ((double) c2_indx.x / width) - 1, 2 * ((double) c2_indx.y / length) - 1, heightmap[c2_indx.x][c2_indx.y]);
+                glm::vec3 corner3(2 * ((double) c3_indx.x / width) - 1, 2 * ((double) c3_indx.y / length) - 1, heightmap[c3_indx.x][c3_indx.y]);
+                glm::vec3 corner4(2 * ((double) c4_indx.x / width) - 1, 2 * ((double) c4_indx.y / length) - 1, heightmap[c4_indx.x][c4_indx.y]);
+                // Correct axe with height as z to height as y, and y to -z
+                double tmp;
+                tmp = corner1.z;
+                corner1.z = -corner1.y;
+                corner1.y = tmp;
 
-            tmp = corner4.z;
-            corner4.z = -corner4.y;
-            corner4.y = tmp;
+                tmp = corner2.z;
+                corner2.z = -corner2.y;
+                corner2.y = tmp;
 
-            // Calculating top triangle face norm and smooth norm
-            // formed by c4, c1, c2
-            glm::vec3 top_v1 = glm::normalize(corner1 - corner2);
-            glm::vec3 top_v2 = glm::normalize(corner4 - corner2);
-            glm::vec3 face_norm_top  = -glm::normalize(glm::cross(top_v1, top_v2));
+                tmp = corner3.z;
+                corner3.z = -corner3.y;
+                corner3.y = tmp;
 
-            // Calculating botton triangle
-            // formed by c2, c3, c4
-            glm::vec3 bot_v1 = glm::normalize(corner3 - corner4);
-            glm::vec3 bot_v2 = glm::normalize(corner2 - corner4);
-            glm::vec3 face_norm_bot  = -glm::normalize(glm::cross(bot_v1, bot_v2));
+                tmp = corner4.z;
+                corner4.z = -corner4.y;
+                corner4.y = tmp;
 
-            // Push back triangle vertices and norms data into vector
-            vertices[(row * (length - 1) + col) * 6 + 0].pos = corner4;
-            vertices[(row * (length - 1) + col) * 6 + 1].pos = corner1;
-            vertices[(row * (length - 1) + col) * 6 + 2].pos = corner2;
-            vertices[(row * (length - 1) + col) * 6 + 3].pos = corner2;
-            vertices[(row * (length - 1) + col) * 6 + 4].pos = corner3;
-            vertices[(row * (length - 1) + col) * 6 + 5].pos = corner4;
+                // Calculating top triangle face norm and smooth norm
+                // formed by c4, c1, c2
+                glm::vec3 top_v1 = glm::normalize(corner1 - corner2);
+                glm::vec3 top_v2 = glm::normalize(corner4 - corner2);
+                glm::vec3 face_norm_top  = -glm::normalize(glm::cross(top_v1, top_v2));
 
-            vertices[(row * (length - 1) + col) * 6 + 0].face_norm = face_norm_top;
-            vertices[(row * (length - 1) + col) * 6 + 1].face_norm = face_norm_top;
-            vertices[(row * (length - 1) + col) * 6 + 2].face_norm = face_norm_top;
-            vertices[(row * (length - 1) + col) * 6 + 3].face_norm = face_norm_bot;
-            vertices[(row * (length - 1) + col) * 6 + 4].face_norm = face_norm_bot;
-            vertices[(row * (length - 1) + col) * 6 + 5].face_norm = face_norm_bot;
+                // Calculating botton triangle
+                // formed by c2, c3, c4
+                glm::vec3 bot_v1 = glm::normalize(corner3 - corner4);
+                glm::vec3 bot_v2 = glm::normalize(corner2 - corner4);
+                glm::vec3 face_norm_bot  = -glm::normalize(glm::cross(bot_v1, bot_v2));
 
-            // corner1: one 90 degree for top normal
-            // corner2: two 45 degree for top and bot normal
-            // corner3: one 90 degree for bot normal
-            // corner4: two 45 degree for top and bot normal
-            accumulated_normals[c1_indx.x][c1_indx.y] += face_norm_top;
-            accumulated_normals[c1_indx.x][c1_indx.y] += face_norm_top + face_norm_bot;
-            accumulated_normals[c1_indx.x][c1_indx.y] += face_norm_top;
-            accumulated_normals[c1_indx.x][c1_indx.y] += face_norm_top + face_norm_bot;
+                // Push back triangle vertices and norms data into vector
+                vertices[(row * (length - 1) + col) * 6 + 0].pos = corner4;
+                vertices[(row * (length - 1) + col) * 6 + 1].pos = corner1;
+                vertices[(row * (length - 1) + col) * 6 + 2].pos = corner2;
+                vertices[(row * (length - 1) + col) * 6 + 3].pos = corner2;
+                vertices[(row * (length - 1) + col) * 6 + 4].pos = corner3;
+                vertices[(row * (length - 1) + col) * 6 + 5].pos = corner4;
+
+                vertices[(row * (length - 1) + col) * 6 + 0].face_norm = face_norm_top;
+                vertices[(row * (length - 1) + col) * 6 + 1].face_norm = face_norm_top;
+                vertices[(row * (length - 1) + col) * 6 + 2].face_norm = face_norm_top;
+                vertices[(row * (length - 1) + col) * 6 + 3].face_norm = face_norm_bot;
+                vertices[(row * (length - 1) + col) * 6 + 4].face_norm = face_norm_bot;
+                vertices[(row * (length - 1) + col) * 6 + 5].face_norm = face_norm_bot;
+
+                // corner1: one 90 degree for top normal
+                // corner2: two 45 degree for top and bot normal
+                // corner3: one 90 degree for bot normal
+                // corner4: two 45 degree for top and bot normal
+                accumulated_normals[c1_indx.x][c1_indx.y] += face_norm_top;
+                accumulated_normals[c1_indx.x][c1_indx.y] += face_norm_top + face_norm_bot;
+                accumulated_normals[c1_indx.x][c1_indx.y] += face_norm_top;
+                accumulated_normals[c1_indx.x][c1_indx.y] += face_norm_top + face_norm_bot;
+            }
         }
-    }
 
-    // Normalize acculated normals
-    for (auto row_it = accumulated_normals.begin(); row_it < accumulated_normals.end(); row_it++) {
-        auto row = *row_it;
-        for (auto cell_it = row.begin(); cell_it != row.end(); cell_it++) {
-            *cell_it = glm::normalize(*cell_it);
+        // Normalize acculated normals
+        for (auto row_it = accumulated_normals.begin(); row_it < accumulated_normals.end(); row_it++) {
+            auto row = *row_it;
+            for (auto cell_it = row.begin(); cell_it != row.end(); cell_it++) {
+                *cell_it = glm::normalize(*cell_it);
+            }
         }
-    }
 
-    // Assigning smooth normals
-    for (int row = 0; row < width - 1; row++) {
-        for (int col = 0; col < length - 1; col++) {
-            // Same order as c4->c1->c2; c2->c3->c4; two triangles
-            vertices[(row * (length - 1) + col) * 6 + 0].smooth_norm = accumulated_normals[row][col];
-            vertices[(row * (length - 1) + col) * 6 + 1].smooth_norm = accumulated_normals[row + 1][col];
-            vertices[(row * (length - 1) + col) * 6 + 2].smooth_norm = accumulated_normals[row + 1][col + 1];
-            vertices[(row * (length - 1) + col) * 6 + 3].smooth_norm = accumulated_normals[row + 1][col + 1];
-            vertices[(row * (length - 1) + col) * 6 + 4].smooth_norm = accumulated_normals[row + 0][col + 1];
-            vertices[(row * (length - 1) + col) * 6 + 5].smooth_norm = accumulated_normals[row][col];
+        // Assigning smooth normals
+        for (int row = 0; row < width - 1; row++) {
+            for (int col = 0; col < length - 1; col++) {
+                // Same order as c4->c1->c2; c2->c3->c4; two triangles
+                vertices[(row * (length - 1) + col) * 6 + 0].smooth_norm = accumulated_normals[row][col];
+                vertices[(row * (length - 1) + col) * 6 + 1].smooth_norm = accumulated_normals[row + 1][col];
+                vertices[(row * (length - 1) + col) * 6 + 2].smooth_norm = accumulated_normals[row + 1][col + 1];
+                vertices[(row * (length - 1) + col) * 6 + 3].smooth_norm = accumulated_normals[row + 1][col + 1];
+                vertices[(row * (length - 1) + col) * 6 + 4].smooth_norm = accumulated_normals[row + 0][col + 1];
+                vertices[(row * (length - 1) + col) * 6 + 5].smooth_norm = accumulated_normals[row][col];
+            }
         }
+
+        std::cout << glm::to_string(vertices[0].pos) << std::endl;
+        std::cout << glm::to_string(vertices[0].face_norm) << std::endl;
+        std::cout << glm::to_string(vertices[1].pos) << std::endl;
+        std::cout << glm::to_string(vertices[1].face_norm) << std::endl;std::cout << glm::to_string(vertices[2].pos) << std::endl;
+        std::cout << glm::to_string(vertices[2].face_norm) << std::endl;
+
+        // Load into OpenGL
+        vcount = (GLsizei)vertices.size();
+        // Load vertices into OpenGL
+        glGenVertexArrays(1, &vaos[layer_idx]);
+        glBindVertexArray(vaos[layer_idx]);
+
+        glGenBuffers(1, &vbufs[layer_idx]);
+        glBindBuffer(GL_ARRAY_BUFFER, vbufs[layer_idx]);
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)sizeof(glm::vec3));
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(2 * sizeof(glm::vec3)));
+
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
-
-    std::cout << glm::to_string(vertices[0].pos) << std::endl;
-    std::cout << glm::to_string(vertices[0].face_norm) << std::endl;
-    std::cout << glm::to_string(vertices[1].pos) << std::endl;
-    std::cout << glm::to_string(vertices[1].face_norm) << std::endl;std::cout << glm::to_string(vertices[2].pos) << std::endl;
-    std::cout << glm::to_string(vertices[2].face_norm) << std::endl;
-
-    // Load into OpenGL
-	vcount = (GLsizei)vertices.size();
-    // Load vertices into OpenGL
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	glGenBuffers(1, &vbuf);
-	glBindBuffer(GL_ARRAY_BUFFER, vbuf);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)sizeof(glm::vec3));
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(2 * sizeof(glm::vec3)));
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     // Pass the PhongConfig
     glBindBuffer(GL_UNIFORM_BUFFER, phongConfigsUBO);
@@ -293,14 +298,20 @@ void Terrain::draw() {
     GLuint sampler_loc = glGetUniformLocation(shader, "heightMap");
     glUniform1i(sampler_loc, 0);
 
-    // Set the initial phong to use
-    GLuint initPhongConfigLoc = glGetUniformLocation(shader, "originalPhongIndx");
-    glUniform1i(initPhongConfigLoc, 0);
-
     // Draw the terrain
-	glBindVertexArray(vao);
-	glDrawArrays(GL_TRIANGLES, 0, vcount);
-	glBindVertexArray(0);
+    for (int i = 0; i < raw_layers.size(); i++) {
+        PhongConfig config = raw_layers[i].second;
+        if (config.drawSurface != 0) {
+            // Set the initial phong to use for the surface
+            GLuint initPhongConfigLoc = glGetUniformLocation(shader, "originalPhongIndx");
+            glUniform1i(initPhongConfigLoc, i);
+
+            glBindVertexArray(vaos[i]);
+            glDrawArrays(GL_TRIANGLES, 0, vcount);
+            glBindVertexArray(0);
+        }
+    }
+
 }
 
 void Terrain::printMatrix(int indx) {

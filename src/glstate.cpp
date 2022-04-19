@@ -65,8 +65,8 @@ void GLState::initializeGL() {
 	std::vector<std::string> seaFuncs;
 	// Terrain::PhongConfig color(0.343, 0.68, 0.66, 5.66, glm::vec3(190, 170, 160));
 	Terrain::PhongConfig config(0.001, 0.46, 1, 8, glm::vec3(255, 255, 255));
-	Terrain::PhongConfig mountainConfig(0.05, 1, 1, 64, glm::vec3(153, 255, 153));
-	Terrain::PhongConfig seaConfig(0.007, 0.18, 1, 32, glm::vec3(180, 150, 255));
+	Terrain::PhongConfig mountainConfig(0.05, 1, 1, 64, glm::vec3(153, 255, 153), 1, 0);
+	Terrain::PhongConfig seaConfig(0.007, 0.18, 1, 32, glm::vec3(180, 150, 255), 1, 1);
 
 	// functions.push_back("pyramid(x, y, 0, 0, 0, 0, 0.5, -0.3, 1)");
 	// functions.push_back("pyramid(x, y, 0, 0, 0, 0, -0.5, 0.3, 1)");
@@ -81,7 +81,7 @@ void GLState::initializeGL() {
 	terrain->pushLayer(std::pair(functions, config));
 
 	mountainFuncs.push_back("perlin(x, y, 2^4) * 0.5 + 0.5");
-	seaFuncs.push_back("perlin(x, y, 2^4)) * 0.5");
+	seaFuncs.push_back("perlin(x, y, 2^1) * 0.05");
 	
 	terrain->pushLayer(std::pair(mountainFuncs, mountainConfig));
 	terrain->pushLayer(std::pair(seaFuncs, seaConfig));

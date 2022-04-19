@@ -176,8 +176,8 @@ protected:
 	// OpenGL resources
     static const GLuint BIND_PT = 1;
 	GLuint shader;	// GPU shader program
-	GLuint vao;		// Vertex array object
-	GLuint vbuf;	// Vertex buffer
+	GLuint vaos[MAX_LAYERS];	// Multiple Vertex array object
+	GLuint vbufs[MAX_LAYERS];	// Vertex buffer
 	GLsizei vcount;	// Number of vertices
     
     GLuint ambStrLoc;
