@@ -81,7 +81,7 @@ void GLState::initializeGL() {
 
 	terrain->pushLayer(std::pair(functions, config));
 
-	seaFuncs.push_back("plane(x, y, 0.2, 0.2, 0.2)");
+	seaFuncs.push_back("plane(x, y, 0.5, 0.5, 0.5)");
 	deepSeaFuncs.push_back("plane(x, y, -0.3, -0.3, -0.3)");
 	terrain->pushLayer(std::pair(seaFuncs, seaConfig));
 	terrain->pushLayer(std::pair(deepSeaFuncs, seaConfig));

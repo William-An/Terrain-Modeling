@@ -287,20 +287,19 @@ void Terrain::draw() {
     //         ptr[i * width + j][3] = raw[i][j];
     //     }
     // }
-    GLubyte ptr[20][20][4];
+
+    // Unsigned byte
+    GLubyte ptr[20][20];
     GLfloat** raw = raw_layers[1].first;
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < length; j++) {
             int c = raw[i][j] * 255.0;
             printf("c = %d\n", c);
-            ptr[i][j][0] = (GLubyte) c;
-            ptr[i][j][1] = (GLubyte) c;
-            ptr[i][j][2] = (GLubyte) c;
-            ptr[i][j][3] = (GLubyte) 255;
+            ptr[i][j] = (GLubyte) c;
         }
     }
 
-    printf("ptr: %d\n", ptr[10][10][0]);
+    printf("ptr: %d\n", ptr[10][10]);
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glGenTextures(1, &heightMap);
@@ -311,7 +310,7 @@ void Terrain::draw() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     // glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, length, 0, GL_RED, GL_FLOAT, ptr);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 20, 20, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 20, 20, 0, GL_RED, GL_UNSIGNED_BYTE, ptr);
 
     GLuint heightMapLoc = glGetUniformLocation(shader, "heightMap");
     printf("Uniform heightmap loc: %d\n", heightMapLoc);
