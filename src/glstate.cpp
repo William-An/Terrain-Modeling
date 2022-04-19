@@ -8,6 +8,7 @@
 
 // Constructor
 GLState::GLState() :
+	terrain(std::unique_ptr<Terrain>(new Terrain())),
 	normalMode(NORMALMODE_SMOOTH),
 	shadingMode(SHADINGMODE_PHONG),
 	width(1), height(1),
@@ -51,8 +52,6 @@ void GLState::initializeGL() {
 	lights.resize(Light::MAX_LIGHTS);
 
 	// Initialize terrain
-	terrain = std::unique_ptr<Terrain>(new Terrain());
-
 	// TODO: Initialize for testing purpose only
 	terrain->setShader(shader);
 	terrain->initGL();

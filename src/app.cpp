@@ -8,6 +8,7 @@
 #include <QScrollBar>
 #include <QDir>
 #include <QSurfaceFormat>
+#include <QGridLayout>
 #include "app.hpp"
 
 // Constructor
@@ -37,22 +38,64 @@ void App::initLayout(std::string configFile) {
 	topLayout->setContentsMargins(0, 0, 0, 0);
 	setLayout(topLayout);
 
+	// Lights layout
+	QVBoxLayout* lightLayout = new QVBoxLayout;
+	lightLayout->setContentsMargins(10, 10, 10, 10);
+
+	// TODO Move light control to the right side
 	// Control panel widget
 	QWidget* controlWidget = new QWidget(this);
 	QVBoxLayout* controlLayout = new QVBoxLayout;
 	controlLayout->setContentsMargins(10, 10, 10, 10);
 	controlWidget->setLayout(controlLayout);
 
-	// Model selector widget
-	QLabel* modelLbl = new QLabel("Model:", this);
-	controlLayout->addWidget(modelLbl);
-	meshSelectCombo = new QComboBox(this);
-	findModels();
-	controlLayout->addWidget(meshSelectCombo);
+	// General control widget group
+	// TODO add callback
+	QGroupBox* generalControl = new QGroupBox("General Control", this);
+	QGridLayout* generalLayout = new QGridLayout;
+	generalControl->setLayout(generalLayout);
+	controlLayout->addWidget(generalControl);
+
+	// Random seed selector
+	QLabel* seedLbl = new QLabel("RNG seed:", this);
+	randomSeedSpin = new QSpinBox(this);
+	randomSeedSpin->setRange(0, 2147483647);
+	generalLayout->addWidget(seedLbl, 0, 0);
+	generalLayout->addWidget(randomSeedSpin, 0, 1);
+
+	// Terrain name
+	QLabel* terrainNameLbl = new QLabel("Terrain Name:", this);
+	terrainName = new QLineEdit(this);
+	terrainName->setText(QString("Terrain"));
+	generalLayout->addWidget(terrainNameLbl, 1, 0);
+	generalLayout->addWidget(terrainName, 1, 1);
+
+	// Randomized seed and generate terrain button
+	QHBoxLayout* terrainGenerationLayout = new QHBoxLayout;
+	randomizedBtn = new QPushButton("Random", this);
+	generateTerrainBtn = new QPushButton("Generate", this);
+	terrainGenerationLayout->addWidget(randomizedBtn);
+	terrainGenerationLayout->addWidget(generateTerrainBtn);
+	generalLayout->addLayout(terrainGenerationLayout, 2, 0, 1, 2);
+
+	// Surface control buttons
+	QHBoxLayout* surfaceControlLayout = new QHBoxLayout;
+	addSurfaceBtn = new QPushButton("Add a surface", this);
+	clearSurfaceBtn = new QPushButton("Clear all surfaces", this);
+	surfaceControlLayout->addWidget(addSurfaceBtn);
+	surfaceControlLayout->addWidget(clearSurfaceBtn);
+	generalLayout->addLayout(surfaceControlLayout, 3, 0, 1, 2);
+
+	// Load and dump config buttons
+	QHBoxLayout* configLoadSaveControlLayout = new QHBoxLayout;
+	loadTerrainConfigBtn = new QPushButton("Load", this);
+	dumpTerrainConfigBtn = new QPushButton("Save", this);
+	configLoadSaveControlLayout->addWidget(loadTerrainConfigBtn);
+	configLoadSaveControlLayout->addWidget(dumpTerrainConfigBtn);
+	generalLayout->addLayout(configLoadSaveControlLayout, 4, 0, 1, 2);
 
 	// Normal mode selection
 	QHBoxLayout* normalsLayout = new QHBoxLayout;
-	controlLayout->addLayout(normalsLayout);
 	QLabel* normalsLbl = new QLabel("Normals:", this);
 	normalsLayout->addWidget(normalsLbl);
 	QButtonGroup* normalsGroup = new QButtonGroup(this);
@@ -62,34 +105,21 @@ void App::initLayout(std::string configFile) {
 	faceNormalsRadio = new QRadioButton("Flat", this);
 	normalsLayout->addWidget(faceNormalsRadio);
 	normalsGroup->addButton(faceNormalsRadio);
+	generalLayout->addLayout(normalsLayout, 5, 0, 1, 2);
 
 	// Shading mode selection
 	QHBoxLayout* shadingLayout = new QHBoxLayout;
-	controlLayout->addLayout(shadingLayout);
 	QLabel* shadingLbl = new QLabel("Shading:", this);
 	shadingLayout->addWidget(shadingLbl);
 	QButtonGroup* shadingGroup = new QButtonGroup(this);
 	phongShadingRadio = new QRadioButton("Phong", this);
 	shadingLayout->addWidget(phongShadingRadio);
 	shadingGroup->addButton(phongShadingRadio);
-	gouraudShadingRadio = new QRadioButton("Gouraud", this);
-	shadingLayout->addWidget(gouraudShadingRadio);
-	shadingGroup->addButton(gouraudShadingRadio);
 	normalsShadingRadio = new QRadioButton("Normals", this);
 	shadingLayout->addWidget(normalsShadingRadio);
 	shadingGroup->addButton(normalsShadingRadio);
-
-	// Presets
-	QHBoxLayout* presetLayout = new QHBoxLayout;
-	controlLayout->addLayout(presetLayout);
-	QLabel* presetLbl = new QLabel("Presets:", this);
-	presetLayout->addWidget(presetLbl);
-	presetGoldBtn = new QPushButton("Gold", this);
-	presetLayout->addWidget(presetGoldBtn);
-	presetObsidianBtn = new QPushButton("Obsidian", this);
-	presetLayout->addWidget(presetObsidianBtn);
-	presetPearlBtn = new QPushButton("Pearl", this);
-	presetLayout->addWidget(presetPearlBtn);
+	generalLayout->addLayout(shadingLayout, 6, 0, 1, 2);
+	// End of general control
 
 	// Material properties
 	QGroupBox* materialGroup = new QGroupBox("Material properties", this);
@@ -144,10 +174,34 @@ void App::initLayout(std::string configFile) {
 	objColorBSpin->setRange(0, 255);
 	objColorLayout->addWidget(objColorBSpin);
 
+	controlLayout->addStretch();
+
+	// Scrollable area
+	QScrollArea* scrollArea = new QScrollArea(this);
+	scrollArea->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+	scrollArea->setWidget(controlWidget);
+	scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	scrollArea->setMinimumWidth(controlLayout->sizeHint().width() +
+		scrollArea->verticalScrollBar()->sizeHint().width());
+	topLayout->addWidget(scrollArea);
+
+	// Set OpenGL context format
+	QSurfaceFormat format;
+	format.setVersion(3, 3);
+	format.setProfile(QSurfaceFormat::CoreProfile);
+	format.setDepthBufferSize(24);
+	format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
+	QSurfaceFormat::setDefaultFormat(format);
+
+	// OpenGL viewing window
+	glView = new GLView(this);
+	topLayout->addWidget(glView);
+
+	// Put Lights here
 	QButtonGroup* lightPosGroup = new QButtonGroup(this);
 	// Light 1 controls
 	QGroupBox* light1Group = new QGroupBox("Light 1", this);
-	controlLayout->addWidget(light1Group);
+	lightLayout->addWidget(light1Group);
 	QVBoxLayout* light1Layout = new QVBoxLayout;
 	light1Group->setLayout(light1Layout);
 	QHBoxLayout* light1TypeLayout = new QHBoxLayout;
@@ -184,7 +238,7 @@ void App::initLayout(std::string configFile) {
 
 	// Light 2 controls
 	QGroupBox* light2Group = new QGroupBox("Light 2", this);
-	controlLayout->addWidget(light2Group);
+	lightLayout->addWidget(light2Group);
 	QVBoxLayout* light2Layout = new QVBoxLayout;
 	light2Group->setLayout(light2Layout);
 	QHBoxLayout* light2TypeLayout = new QHBoxLayout;
@@ -220,7 +274,7 @@ void App::initLayout(std::string configFile) {
 
 	// Light 3 controls
 	QGroupBox* light3Group = new QGroupBox("Light 3", this);
-	controlLayout->addWidget(light3Group);
+	lightLayout->addWidget(light3Group);
 	QVBoxLayout* light3Layout = new QVBoxLayout;
 	light3Group->setLayout(light3Layout);
 	QHBoxLayout* light3TypeLayout = new QHBoxLayout;
@@ -256,7 +310,7 @@ void App::initLayout(std::string configFile) {
 
 	// Light 4 controls
 	QGroupBox* light4Group = new QGroupBox("Light 4", this);
-	controlLayout->addWidget(light4Group);
+	lightLayout->addWidget(light4Group);
 	QVBoxLayout* light4Layout = new QVBoxLayout;
 	light4Group->setLayout(light4Layout);
 	QHBoxLayout* light4TypeLayout = new QHBoxLayout;
@@ -289,42 +343,15 @@ void App::initLayout(std::string configFile) {
 	light4ColorPosLayout->addWidget(light4YLbl, 1, 2);
 	QLabel* light4ZLbl = new QLabel("0.0", this);
 	light4ColorPosLayout->addWidget(light4ZLbl, 1, 3);
+	lightLayout->addStretch();
 
-	controlLayout->addStretch();
-
-	// Scrollable area
-	QScrollArea* scrollArea = new QScrollArea(this);
-	scrollArea->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
-	scrollArea->setWidget(controlWidget);
-	scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	scrollArea->setMinimumWidth(controlLayout->sizeHint().width() +
-		scrollArea->verticalScrollBar()->sizeHint().width());
-	topLayout->addWidget(scrollArea);
-
-	// Set OpenGL context format
-	QSurfaceFormat format;
-	format.setVersion(3, 3);
-	format.setProfile(QSurfaceFormat::CoreProfile);
-	format.setDepthBufferSize(24);
-	format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
-	QSurfaceFormat::setDefaultFormat(format);
-
-	// OpenGL viewing window
-	glView = new GLView(this);
-	topLayout->addWidget(glView);
+	topLayout->addLayout(lightLayout);
 
 
-	// Connect combo box entries to OpenGL widget
-	connect(meshSelectCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-		[=](int index) {
-			GLState& glState = glView->getGLState();
-			try {
-				// glState.showObjFile(meshSelectCombo->itemText(index).toStdString());
-			} catch (const std::exception& e) {
-				std::cerr << e.what() << std::endl;
-			}
-			glView->update();
-		});
+
+	// Conntect random seed spiner to glstate
+	connect(randomSeedSpin, QOverload<int>::of(&QSpinBox::valueChanged), [=](int value) {
+		glView->getGLState().terrain->setSeed(value); });
 
 	// Update normal mode
 	connect(faceNormalsRadio, &QRadioButton::clicked, [=](bool checked) {
@@ -353,32 +380,6 @@ void App::initLayout(std::string configFile) {
 			if (!checked) return;
 			glView->getGLState().setShadingMode(GLState::SHADINGMODE_GOURAUD);
 			glView->update();
-		});
-
-	// Load presets
-	connect(presetGoldBtn, &QPushButton::clicked, [=]() {
-			try {
-				glView->readConfigFile("config_gold.txt");
-				glView->update();
-			} catch (const std::exception& e) {
-				std::cerr << e.what() << std::endl;
-			}
-		});
-	connect(presetObsidianBtn, &QPushButton::clicked, [=]() {
-			try {
-				glView->readConfigFile("config_obsidian.txt");
-				glView->update();
-			} catch (const std::exception& e) {
-				std::cerr << e.what() << std::endl;
-			}
-		});
-	connect(presetPearlBtn, &QPushButton::clicked, [=]() {
-			try {
-				glView->readConfigFile("config_pearl.txt");
-				glView->update();
-			} catch (const std::exception& e) {
-				std::cerr << e.what() << std::endl;
-			}
 		});
 
 	// Update ambient strength
@@ -555,11 +556,6 @@ void App::initLayout(std::string configFile) {
 	// Update configuration when a config file is read
 	connect(glView, &GLView::configChanged, [=]() {
 			const GLState& glState = glView->getGLState();
-
-			// Currently displayed model
-			meshSelectCombo->setCurrentIndex(
-				meshSelectCombo->findText(
-				QString::fromStdString(glState.getMeshFilename())));
 
 			// Ambient strength
 			float ambStr = glState.getAmbientStrength();

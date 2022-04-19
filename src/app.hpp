@@ -8,7 +8,10 @@
 #include <QCheckBox>
 #include <QSlider>
 #include <QSpinBox>
+#include <QDoubleSpinBox>
 #include <QKeyEvent>
+#include <QLabel>
+#include <QLineEdit>
 #include "glview.hpp"
 
 // Application window
@@ -44,6 +47,37 @@ private:
 	QSpinBox* objColorRSpin;
 	QSpinBox* objColorGSpin;
 	QSpinBox* objColorBSpin;
+
+	// General control
+	QSpinBox* randomSeedSpin;			// Random seed dialog
+	QLineEdit* terrainName;
+	QPushButton* randomizedBtn;			// Roll for a new seed
+	QPushButton* generateTerrainBtn;	// Generate terrain based on current config
+	QPushButton* addSurfaceBtn;			// Add a surface control
+	QPushButton* clearSurfaceBtn;		// Remove all surface funcs
+	QPushButton* loadTerrainConfigBtn;
+	QPushButton* dumpTerrainConfigBtn;
+
+	// Surface control
+	class SurfaceWidgetGroup {
+		public:
+			std::vector<std::pair<QLabel*, QLineEdit*>> surfaceFuncs;
+			QDoubleSpinBox* ambStrSpin;
+			QDoubleSpinBox* diffStrSpin;
+			QDoubleSpinBox* specStrSpin;
+			QDoubleSpinBox* specExpSpin;
+			QSpinBox* objColorRSpin;
+			QSpinBox* objColorGSpin;
+			QSpinBox* objColorBSpin;
+			QPushButton* removeSurfaceBtn;	// Delete this widget group
+			QPushButton* addSurfaceFuncBtn;	// Add a line of the func
+			QPushButton* clearSurfaceBtn;	// Remove all functions
+
+			// TODO Should have a view returned to construct in top level
+			SurfaceWidgetGroup();
+	};
+
+	std::vector<App::SurfaceWidgetGroup*> surfaces;
 
 	// Light 1 controls
 	QCheckBox* light1EnabledCB;

@@ -73,6 +73,7 @@ public:
 
 	// Set object to display
 	// void showObjFile(const std::string& filename);
+	std::unique_ptr<Terrain> terrain;
 
 protected:
 	bool init;						// Whether we've been initialized yet
@@ -96,7 +97,6 @@ protected:
 	std::string meshFilename;		// Name of the obj file being shown
 	// std::unique_ptr<Mesh> mesh;		// Pointer to mesh object
 	std::vector<Light> lights;		// Lights
-	std::unique_ptr<Terrain> terrain;
 
 	// Shader state
 	GLuint shader;			// GPU shader program
