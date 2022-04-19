@@ -56,12 +56,13 @@ void GLState::initializeGL() {
 	// TODO: Initialize for testing purpose only
 	terrain->setShader(shader);
 	terrain->initGL();
-	terrain->setSize(100, 100);
+	terrain->setSize(20, 20);
 	terrain->setSeed(1);
 	std::string name("Test");
 	terrain->setName(name);
 	std::vector<std::string> functions;
 	std::vector<std::string> seaFuncs;
+	std::vector<std::string> deepSeaFuncs;
 	// Terrain::PhongConfig color(0.343, 0.68, 0.66, 5.66, glm::vec3(190, 170, 160));
 	Terrain::PhongConfig config(0.001, 0.46, 1, 8, glm::vec3(255, 190, 0));
 	Terrain::PhongConfig seaConfig(0.001, 0.46, 1, 8, glm::vec3(100, 100, 255));
@@ -80,8 +81,10 @@ void GLState::initializeGL() {
 
 	terrain->pushLayer(std::pair(functions, config));
 
-	seaFuncs.push_back("plane(x, y, 0.2, 0.2, 0.2, 0.2)");
+	seaFuncs.push_back("plane(x, y, 0.2, 0.2, 0.2)");
+	deepSeaFuncs.push_back("plane(x, y, -0.3, -0.3, -0.3)");
 	terrain->pushLayer(std::pair(seaFuncs, seaConfig));
+	terrain->pushLayer(std::pair(deepSeaFuncs, seaConfig));
 	
 	// TODO: Need a button to call regenerate
 	terrain->evaluate();

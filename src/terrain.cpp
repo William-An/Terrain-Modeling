@@ -29,7 +29,10 @@ void Terrain::initGL() {
     glUseProgram(shader);
     GLuint uniformConfigBlocIndx = glGetUniformBlockIndex(shader, "PhongConfigBlock");
     glUniformBlockBinding(shader, uniformConfigBlocIndx, BIND_PT);
-    glUseProgram(0);
+
+    // Generate texture obj
+    glGenTextures(1, &heightMap);
+    printf("Loc for texture: %d\n", heightMap);
 }
 
 void Terrain::load(std::string& config_file_path) {
@@ -58,15 +61,19 @@ void Terrain::evaluate() {
     terrainParser.setSize(width, length);
     terrainParser.configNoiseGnerators();
     
+    // Discard all previous calculation
+    raw_layers.clear();
+    
     for (auto it = layers_functions.begin(); it != layers_functions.end(); it++) {
+        printf("Evaluating a new layer\n");
         std::pair<std::vector<std::string>, PhongConfig> layer_functions = *it;
         auto color = layer_functions.second;
         std::vector<std::string> functions = layer_functions.first;
 
         // Initialize 2D matrix holding terrain height
-        double** matrix = new double*[width];
+        float** matrix = new float*[width];
         for (int i = 0; i < width; i++)
-            matrix[i] = new double[length];
+            matrix[i] = new float[length];
 
         for (int i = 0; i < width; i++)
             for (int j = 0; j < length; j++)
@@ -75,9 +82,10 @@ void Terrain::evaluate() {
         // Fill in values for matrix
         double vars[3];
         vars[2] = 0;
-        for (auto func_it = functions.begin(); func_it != functions.end(); func_it++) {
+        for (auto func_it = functions.begin(); func_it < functions.end(); func_it++) {
             // Evaluaten function and add to terrain height map
             std::string func_string = *func_it;
+            printf("Evaluating func: %s\n", func_string.c_str());
             terrainParser.Parse(func_string, "x,y,N");
             // terrainParser.Optimize();
             for (int row = 0; row < width; row++) {
@@ -91,7 +99,8 @@ void Terrain::evaluate() {
                     vars[1] = y;
 
                     // Evaluate functions
-                    matrix[row][col] += terrainParser.Eval(vars);
+                    double res = terrainParser.Eval(vars);
+                    matrix[row][col] += res;
                 }
             }
             // Increase count of layer, N
@@ -114,7 +123,7 @@ void Terrain::generate() {
     // TODO For loop to load all layer into the shader
     // TODO Just plotting the first layer
     std::pair first_layer = raw_layers[0];
-    double **heightmap = first_layer.first;
+    float **heightmap = first_layer.first;
     PhongConfig config = first_layer.second;
 
     for (int row = 0; row < width - 1; row++) {
@@ -194,7 +203,7 @@ void Terrain::generate() {
     }
 
     // Normalize acculated normals
-    for (auto row_it = accumulated_normals.begin(); row_it != accumulated_normals.end(); row_it++) {
+    for (auto row_it = accumulated_normals.begin(); row_it < accumulated_normals.end(); row_it++) {
         auto row = *row_it;
         for (auto cell_it = row.begin(); cell_it != row.end(); cell_it++) {
             *cell_it = glm::normalize(*cell_it);
@@ -237,24 +246,84 @@ void Terrain::generate() {
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(2 * sizeof(glm::vec3)));
 
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
     // Pass the PhongConfig
     glBindBuffer(GL_UNIFORM_BUFFER, phongConfigsUBO);
     config.color /= 255.0f;
-    // 0 as the first one, need to change in a loop
+    // TODO 0 as the first one, need to change in a loop
 	glBufferSubData(GL_UNIFORM_BUFFER, 0 * sizeof(PhongConfig),
 		sizeof(PhongConfig), &config);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void Terrain::draw() {
     // TODO: Also visualizing the surfaces?
     // TODO: Load and draw each layer with its own config
+    // TODO: When drawing, load each heightmap for surface as texture
+    // TODO: Then draw correspondingly
+
+    // Create texture
+    // TODO Heightmap not passed in as texture
+    // GLfloat** ptr = new GLfloat*[width * length];
+    // for (int i = 0; i < width * length; i++)
+    //     ptr[i] = new GLfloat[4];
+    // GLfloat** raw = raw_layers[1].first;
+    // for (int i = 0; i < width; i++) {
+    //     for (int j = 0; j < length; j++) {
+    //         ptr[i * width + j][0] = raw[i][j];
+    //         ptr[i * width + j][1] = raw[i][j];
+    //         ptr[i * width + j][2] = raw[i][j];
+    //         ptr[i * width + j][3] = raw[i][j];
+    //     }
+    // }
+
+    // for (int i = 0; i < width; i++) {
+    //     for (int j = 0; j < length; j++) {
+    //         ptr[i * width + j][0] = raw[i][j];
+    //         ptr[i * width + j][1] = raw[i][j];
+    //         ptr[i * width + j][2] = raw[i][j];
+    //         ptr[i * width + j][3] = raw[i][j];
+    //     }
+    // }
+    GLubyte ptr[20][20][4];
+    GLfloat** raw = raw_layers[1].first;
+    for (int i = 0; i < width; i++) {
+        for (int j = 0; j < length; j++) {
+            int c = raw[i][j] * 255.0;
+            printf("c = %d\n", c);
+            ptr[i][j][0] = (GLubyte) c;
+            ptr[i][j][1] = (GLubyte) c;
+            ptr[i][j][2] = (GLubyte) c;
+            ptr[i][j][3] = (GLubyte) 255;
+        }
+    }
+
+    printf("ptr: %d\n", ptr[10][10][0]);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glGenTextures(1, &heightMap);
+    glBindTexture(GL_TEXTURE_2D, heightMap);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, length, 0, GL_RED, GL_FLOAT, ptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 20, 20, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptr);
+
+    GLuint heightMapLoc = glGetUniformLocation(shader, "heightMap");
+    printf("Uniform heightmap loc: %d\n", heightMapLoc);
+    glUniform1i(heightMapLoc, 0);
+    
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, heightMap);
+
 	glBindVertexArray(vao);
 	glDrawArrays(GL_TRIANGLES, 0, vcount);
 	glBindVertexArray(0);
+    // printMatrix(1);
 }
 
 void Terrain::printMatrix(int indx) {
@@ -265,7 +334,7 @@ void Terrain::printMatrix(int indx) {
     }
 
     std::pair raw_layer = raw_layers[indx];
-    double **matrix = raw_layer.first;
+    float **matrix = raw_layer.first;
     PhongConfig color = raw_layer.second;
 
     // std::cout << "Color of layer: " << glm::to_string(color) << std::endl;

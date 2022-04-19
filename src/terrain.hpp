@@ -107,7 +107,7 @@ protected:
     // double[][]   : layer height
     // PhongConfig  : layer lighting configuration
     // first one is the terrain and color is ignored
-    std::vector<std::pair<double**, PhongConfig>> raw_layers;
+    std::vector<std::pair<GLfloat**, PhongConfig>> raw_layers;
 
     // Function controlling each layer
     std::vector<std::pair<std::vector<std::string>, PhongConfig>> layers_functions;
@@ -181,6 +181,8 @@ protected:
     GLuint coverBottomLoc;
 
     GLuint phongConfigsUBO;
+    GLuint heightMap;
+    // GLuint heightMapTextureLoc;
 
     PhongConfig testConfig;
 };

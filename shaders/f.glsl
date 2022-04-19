@@ -10,6 +10,7 @@ const int LIGHTTYPE_DIRECTIONAL = 1;	// Directional light
 smooth in vec3 fragPos;		// Interpolated position in world-space
 smooth in vec3 fragNorm;	// Interpolated normal in world-space
 smooth in vec3 gouraudCol;	// Interpolated frag color
+smooth in vec3 localFragPos;	// Interpolated local pos
 
 out vec3 outCol;	// Final pixel color
 
@@ -54,6 +55,8 @@ uniform vec3 objColor;			// Object color
 uniform bool drawSurface;		// If draw the surface
 uniform bool coverBottom;		// If dye the area below it to the config
 
+uniform sampler2D heightMap;
+
 void main() {
 	if (shadingMode == SHADINGMODE_NORMALS)
 		outCol = normalize(fragNorm) * 0.5 + vec3(0.5);
@@ -62,6 +65,16 @@ void main() {
 		// TODO ====================================================================
 		// Implement Phong illumination
 		outCol = vec3(0.0);
+
+		// TODO TESTING
+		// vec4 tmp = texture2D(heightMap, vec2(fragPos.x, -fragPos.z));
+		// outCol = tmp.r * vec4(0.4, 1.0, 0.8, 1.0).rgb;
+		// outCol = 4 * fragPos.x * vec4(0.4, 1.0, 0.8, 1.0).rgb;
+		// return;
+		// End testing
+
+		vec4 texValue = texture2D(heightMap, vec2(fragPos.x, -fragPos.z));
+		
 		for (int i = 0; i < MAX_LIGHTS; i++) {
 			if (!lights[i].enabled) {
 				continue;
@@ -71,7 +84,13 @@ void main() {
 				// Add light components
 				// TODO
 				// vec3 ambient = ambStr * lights[i].color;
-				vec3 ambient = configs[0].ambient * lights[i].color;
+				float height = texValue.r;
+				vec3 ambient = vec3(0.0);
+				if (localFragPos.x < height) {
+					ambient = configs[0].ambient * lights[i].color;
+				} else {
+					ambient = 0.5 * lights[i].color;
+				}
 
 				// Compute light direction and diffuse
 				vec3 lightDir = vec3(0);
