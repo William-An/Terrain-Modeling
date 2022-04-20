@@ -19,6 +19,27 @@ class App : public QWidget {
 	Q_OBJECT
 public:
 	App(std::string configFile, QWidget* parent = NULL);
+	
+	// Surface group
+	class SurfaceWidgetGroup : public QGroupBox {
+		public:
+			int surface_index;
+			std::vector<std::pair<QLabel*, QLineEdit*>> surfaceFuncs;
+			QDoubleSpinBox* ambStrSpin;
+			QDoubleSpinBox* diffStrSpin;
+			QDoubleSpinBox* specStrSpin;
+			QDoubleSpinBox* specExpSpin;
+			QSpinBox* objColorRSpin;
+			QSpinBox* objColorGSpin;
+			QSpinBox* objColorBSpin;
+			QPushButton* removeSurfaceBtn;	// Delete this widget group
+			QPushButton* addSurfaceFuncBtn;	// Add a line of the func
+			QPushButton* clearSurfaceBtn;	// Remove all functions
+
+			// TODO Should have a view returned to construct in top level
+			SurfaceWidgetGroup(int index);
+	};
+
 
 protected:
 	// Event handlers
@@ -59,24 +80,6 @@ private:
 	QPushButton* dumpTerrainConfigBtn;
 
 	// Surface control
-	class SurfaceWidgetGroup {
-		public:
-			std::vector<std::pair<QLabel*, QLineEdit*>> surfaceFuncs;
-			QDoubleSpinBox* ambStrSpin;
-			QDoubleSpinBox* diffStrSpin;
-			QDoubleSpinBox* specStrSpin;
-			QDoubleSpinBox* specExpSpin;
-			QSpinBox* objColorRSpin;
-			QSpinBox* objColorGSpin;
-			QSpinBox* objColorBSpin;
-			QPushButton* removeSurfaceBtn;	// Delete this widget group
-			QPushButton* addSurfaceFuncBtn;	// Add a line of the func
-			QPushButton* clearSurfaceBtn;	// Remove all functions
-
-			// TODO Should have a view returned to construct in top level
-			SurfaceWidgetGroup();
-	};
-
 	std::vector<App::SurfaceWidgetGroup*> surfaces;
 
 	// Light 1 controls

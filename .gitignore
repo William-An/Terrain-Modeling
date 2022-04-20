@@ -9,6 +9,7 @@ Makefile
 base_qt
 build/
 .vscode/
+core
 
 # Prerequisites
 *.d

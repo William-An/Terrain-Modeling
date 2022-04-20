@@ -38,11 +38,13 @@ void App::initLayout(std::string configFile) {
 	topLayout->setContentsMargins(0, 0, 0, 0);
 	setLayout(topLayout);
 
+	// Surface layout
+	QVBoxLayout* surfaceLayout = new QVBoxLayout;
+
 	// Lights layout
 	QVBoxLayout* lightLayout = new QVBoxLayout;
 	lightLayout->setContentsMargins(10, 10, 10, 10);
 
-	// TODO Move light control to the right side
 	// Control panel widget
 	QWidget* controlWidget = new QWidget(this);
 	QVBoxLayout* controlLayout = new QVBoxLayout;
@@ -174,7 +176,10 @@ void App::initLayout(std::string configFile) {
 	objColorBSpin->setRange(0, 255);
 	objColorLayout->addWidget(objColorBSpin);
 
+	controlLayout->addLayout(surfaceLayout);
 	controlLayout->addStretch();
+
+	// Control layout done
 
 	// Scrollable area
 	QScrollArea* scrollArea = new QScrollArea(this);
@@ -848,4 +853,10 @@ int main(int argc, char** argv) {
 		std::cerr << "Fatal error: " << e.what() << std::endl;
 		return -1;
 	}
+}
+
+App::SurfaceWidgetGroup::SurfaceWidgetGroup(int index) {
+	surface_index = index;
+
+	// TODO Constructing group box layout
 }
