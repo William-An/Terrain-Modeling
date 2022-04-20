@@ -9,6 +9,8 @@
 #include <QDir>
 #include <QSurfaceFormat>
 #include <QGridLayout>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
 #include "app.hpp"
 
 // Constructor
@@ -38,8 +40,8 @@ void App::initLayout(std::string configFile) {
 	topLayout->setContentsMargins(0, 0, 0, 0);
 	setLayout(topLayout);
 
-	// Surface layout
-	QVBoxLayout* surfaceLayout = new QVBoxLayout;
+	// Surfaces layout
+	QVBoxLayout* surfacesLayout = new QVBoxLayout;
 
 	// Lights layout
 	QVBoxLayout* lightLayout = new QVBoxLayout;
@@ -176,7 +178,13 @@ void App::initLayout(std::string configFile) {
 	objColorBSpin->setRange(0, 255);
 	objColorLayout->addWidget(objColorBSpin);
 
-	controlLayout->addLayout(surfaceLayout);
+	// Surfaces Layout
+	// Add an init surface
+	surfaces = new std::vector<App::SurfaceWidgetGroup*>();
+	surfaces->push_back(new App::SurfaceWidgetGroup(0));
+	surfacesLayout->addWidget(surfaces->at(0));
+
+	controlLayout->addLayout(surfacesLayout);
 	controlLayout->addStretch();
 
 	// Control layout done
@@ -855,8 +863,144 @@ int main(int argc, char** argv) {
 	}
 }
 
-App::SurfaceWidgetGroup::SurfaceWidgetGroup(int index) {
+App::SurfaceWidgetGroup::SurfaceWidgetGroup(int index, QWidget *parent): QGroupBox(parent) {
 	surface_index = index;
 
 	// TODO Constructing group box layout
+	// Use Grid layout
+	surfaceLayout = new QVBoxLayout(this);
+	this->setLayout(surfaceLayout);
+
+	// Layer number
+	this->setTitle(QString("Layer No. %1:").arg(index));
+
+	// Phong Model parameters
+	QGridLayout* paramGridLayout = new QGridLayout(this);
+	QLabel* ambLbl = new QLabel("Ambient", this);
+	ambLbl->sizePolicy().setHorizontalStretch(1);
+	ambStrSpin = new QDoubleSpinBox(this);
+	ambStrSpin->setRange(0, 1);
+	ambStrSpin->setSingleStep(0.05);
+	ambStrSpin->sizePolicy().setHorizontalStretch(1);
+	paramGridLayout->addWidget(ambLbl, 0, 0);
+	paramGridLayout->addWidget(ambStrSpin, 0, 1);
+
+	QLabel* diffLbl = new QLabel("Diffuse", this);
+	diffLbl->sizePolicy().setHorizontalStretch(1);
+	diffStrSpin = new QDoubleSpinBox(this);
+	diffStrSpin->setRange(0, 1);
+	diffStrSpin->setSingleStep(0.05);
+	diffStrSpin->sizePolicy().setHorizontalStretch(1);
+	paramGridLayout->addWidget(diffLbl, 0, 2);
+	paramGridLayout->addWidget(diffStrSpin, 0, 3);
+
+	QLabel* specLbl = new QLabel("Specular", this);
+	specLbl->sizePolicy().setHorizontalStretch(1);
+	specStrSpin = new QDoubleSpinBox(this);
+	specStrSpin->setRange(0, 1);
+	specStrSpin->setSingleStep(0.05);
+	specStrSpin->sizePolicy().setHorizontalStretch(1);
+	paramGridLayout->addWidget(specLbl, 1, 0);
+	paramGridLayout->addWidget(specStrSpin, 1, 1);
+
+	QLabel* expLbl = new QLabel("Exponent", this);
+	expLbl->sizePolicy().setHorizontalStretch(1);
+	specExpSpin = new QDoubleSpinBox(this);
+	specExpSpin->setRange(0, 1024);
+	specExpSpin->setStepType(QAbstractSpinBox::StepType::AdaptiveDecimalStepType);
+	specExpSpin->sizePolicy().setHorizontalStretch(1);
+	paramGridLayout->addWidget(expLbl, 1, 2);
+	paramGridLayout->addWidget(specExpSpin, 1, 3);
+
+	QLabel* objColorLbl = new QLabel("Color (RGB):", this);
+	objColorRSpin = new QSpinBox(this);
+	objColorRSpin->setRange(0, 255);
+	objColorRSpin->sizePolicy().setHorizontalStretch(1);
+	objColorGSpin = new QSpinBox(this);
+	objColorGSpin->setRange(0, 255);
+	objColorGSpin->sizePolicy().setHorizontalStretch(1);
+	objColorBSpin = new QSpinBox(this);
+	objColorBSpin->setRange(0, 255);
+	objColorBSpin->sizePolicy().setHorizontalStretch(1);
+	paramGridLayout->addWidget(objColorLbl, 2, 0);
+	paramGridLayout->addWidget(objColorRSpin, 2, 1);
+	paramGridLayout->addWidget(objColorGSpin, 2, 2);
+	paramGridLayout->addWidget(objColorBSpin, 2, 3);
+
+	surfaceLayout->addLayout(paramGridLayout);
+
+	// Surface functions config buttons
+	QHBoxLayout* controlBtnsLayout = new QHBoxLayout;
+	addSurfaceFuncBtn = new QPushButton("Add a sub layer", this);
+	clearSurfaceBtn = new QPushButton("Delete all sub layers", this);
+	removeSurfaceBtn = new QPushButton("Delete this layer", this);
+	controlBtnsLayout->addWidget(addSurfaceFuncBtn);
+	controlBtnsLayout->addWidget(clearSurfaceBtn);
+	controlBtnsLayout->addWidget(removeSurfaceBtn);
+	surfaceLayout->addLayout(controlBtnsLayout);
+
+	// Surface functions control
+	subSurfaceFuncs = new std::vector<SubSurfaceFunc*>();
+	subSurfaceFuncsLayout = new QVBoxLayout;
+	addSurfaceFunc();
+
+	surfaceLayout->addLayout(subSurfaceFuncsLayout);
+
+	// TODO Connecting callbacks
+	connect(addSurfaceFuncBtn, &QPushButton::clicked, [=] {
+		addSurfaceFunc();});
+	connect(clearSurfaceBtn, &QPushButton::clicked, [=] {
+		clearAllSubSurfaces();});
+	connect(removeSurfaceBtn, &QPushButton::clicked, [=] {
+		((App*) parent)->removeLayer(surface_index);});
+}
+
+void App::SurfaceWidgetGroup::addSurfaceFunc() {
+	int index = subSurfaceFuncs->size();
+	SubSurfaceFunc* subSurf = new SubSurfaceFunc(index, this);
+	subSurfaceFuncs->push_back(subSurf);
+	subSurfaceFuncsLayout->addWidget(subSurf);
+	printf("%s:%s:%d adding sub surface index %d\n", __FILE__, __func__, __LINE__, index);
+}
+
+void App::SurfaceWidgetGroup::removeSubSurfaceFunc(QWidget* subSurf) {
+	
+	auto remove_it = subSurfaceFuncs->begin();
+
+	// Find the item to delete
+	for (; remove_it < subSurfaceFuncs->end(); remove_it++) {
+		if (*remove_it == subSurf)
+			break;
+	}
+
+	// Not found
+	if (remove_it == subSurfaceFuncs->end())
+		return;
+
+	// Reset index
+	int remove_indx = (*remove_it)->index;
+	for (auto it = remove_it + 1; it < subSurfaceFuncs->end(); it++) {
+		(*it)->setIndex((*it)->index - 1);
+	}
+
+	// Remove from layout first
+	subSurfaceFuncsLayout->removeWidget(*remove_it);
+	(*remove_it)->setVisible(false);
+
+	// Then destory it
+	subSurfaceFuncs->erase(remove_it);
+
+	printf("%s:%s:%d removing sub surface index %d\n", __FILE__, __func__, __LINE__, remove_indx);
+}
+
+void App::SurfaceWidgetGroup::clearAllSubSurfaces() {
+	// Remove all widget first
+	for (auto it = subSurfaceFuncs->begin(); it < subSurfaceFuncs->end(); it++) {
+		subSurfaceFuncsLayout->removeWidget(*it);
+		auto widget = *it;
+		widget->setVisible(false);
+	}
+	subSurfaceFuncs->clear();
+
+	printf("%s:%s:%d removing all sub surfaces\n", __FILE__, __func__, __LINE__);
 }

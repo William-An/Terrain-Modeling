@@ -9,6 +9,9 @@
 #include <QSlider>
 #include <QSpinBox>
 #include <QDoubleSpinBox>
+#include <QGroupBox>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
@@ -23,8 +26,55 @@ public:
 	// Surface group
 	class SurfaceWidgetGroup : public QGroupBox {
 		public:
+			class SubSurfaceFunc : public QWidget {
+				public:
+					int index;
+					QLabel* subSurfaceLbl;
+					QLineEdit* subSurfaceLine;
+					QPushButton* subSurfaceRemoveBtn;
+					QHBoxLayout* subSurfaceLayout;
+
+					SubSurfaceFunc(int index, QWidget *parent = nullptr): QWidget(parent) {
+						this->index = index;
+
+						// Layout control
+						subSurfaceLayout = new QHBoxLayout(this);
+						this->setLayout(subSurfaceLayout);
+
+						subSurfaceLbl = new QLabel(QString("Sub layer %1: ").arg(index));
+						subSurfaceLbl->sizePolicy().setHorizontalStretch(3);
+						subSurfaceLine = new QLineEdit("normal(x,y, 0.5, 0.5)");
+						subSurfaceLine->sizePolicy().setHorizontalStretch(10);
+						subSurfaceRemoveBtn = new QPushButton(QString("Delete"));
+						subSurfaceRemoveBtn->sizePolicy().setHorizontalStretch(2);
+
+						subSurfaceLayout->addWidget(subSurfaceLbl);
+						subSurfaceLayout->addWidget(subSurfaceLine);
+						subSurfaceLayout->addWidget(subSurfaceRemoveBtn);
+
+						// Connect delete button to parent remove
+						connect(subSurfaceRemoveBtn, &QPushButton::clicked, [=] {
+							((SurfaceWidgetGroup *)parent)->removeSubSurfaceFunc(this);
+						});
+					};
+
+					~SubSurfaceFunc() {
+						subSurfaceLayout->removeWidget(subSurfaceLbl);
+						subSurfaceLayout->removeWidget(subSurfaceLine);
+						subSurfaceLayout->removeWidget(subSurfaceRemoveBtn);
+						delete subSurfaceLbl;
+						delete subSurfaceLine;
+						delete subSurfaceRemoveBtn;
+						delete subSurfaceLayout;
+					}
+
+					void setIndex(int i) {
+						this->index = i;
+						subSurfaceLbl->setText(QString("Sub layer %1: ").arg(index));
+					}
+			};
 			int surface_index;
-			std::vector<std::pair<QLabel*, QLineEdit*>> surfaceFuncs;
+			std::vector<SubSurfaceFunc*>* subSurfaceFuncs;
 			QDoubleSpinBox* ambStrSpin;
 			QDoubleSpinBox* diffStrSpin;
 			QDoubleSpinBox* specStrSpin;
@@ -32,13 +82,27 @@ public:
 			QSpinBox* objColorRSpin;
 			QSpinBox* objColorGSpin;
 			QSpinBox* objColorBSpin;
-			QPushButton* removeSurfaceBtn;	// Delete this widget group
-			QPushButton* addSurfaceFuncBtn;	// Add a line of the func
-			QPushButton* clearSurfaceBtn;	// Remove all functions
+			QPushButton* addSurfaceFuncBtn;		// Add a line of the func
+			QPushButton* clearSurfaceBtn;		// Remove all functions
+			QPushButton* removeSurfaceBtn;		// Delete this widget group
+			QVBoxLayout* surfaceLayout;
+			QVBoxLayout* subSurfaceFuncsLayout;	// Handle to add and remove func sublayer
 
 			// TODO Should have a view returned to construct in top level
-			SurfaceWidgetGroup(int index);
+			SurfaceWidgetGroup(int index, QWidget *parent = nullptr);
+
+			// Add a sub surface func input and add to surfaceFuncsLayout
+			void addSurfaceFunc();
+
+			// Remove a sub surface func with the pointer val 
+			void removeSubSurfaceFunc(QWidget* subSurf);
+
+			// Remove all sub surfaces
+			void clearAllSubSurfaces();
 	};
+
+	// TODO remove a surface layer at index
+	void removeLayer(int index) {};
 
 
 protected:
@@ -80,7 +144,7 @@ private:
 	QPushButton* dumpTerrainConfigBtn;
 
 	// Surface control
-	std::vector<App::SurfaceWidgetGroup*> surfaces;
+	std::vector<App::SurfaceWidgetGroup*>* surfaces;
 
 	// Light 1 controls
 	QCheckBox* light1EnabledCB;
