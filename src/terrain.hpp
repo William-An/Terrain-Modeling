@@ -90,6 +90,9 @@ public:
         auto it = layers_functions.begin();
         layers_functions.erase(it + pos);
     };
+    void clearAllLayers() {
+        layers_functions.clear();
+    }
 
 protected:
     // Member variables storing the terrain specifications
@@ -111,7 +114,7 @@ protected:
 		// Vertex();
 	};
     
-    // Layers of terrain
+    // Layers of terrain, get generated everytime by calling evaluate()
     // double[][]   : layer height
     // PhongConfig  : layer lighting configuration
     // first one is the terrain and color is ignored

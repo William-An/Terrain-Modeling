@@ -119,6 +119,7 @@ public:
 		printf("Maximu: %d\n", end);
 		scrollArea->verticalScrollBar()->setValue(end);
 	};
+	void generateLayers();
 
 
 protected:

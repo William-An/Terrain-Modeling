@@ -75,6 +75,26 @@ public:
 	// void showObjFile(const std::string& filename);
 	std::unique_ptr<Terrain> terrain;
 
+	// TODO Terrain control function goes here
+	void clearTerrainLayers() {
+		terrain->clearAllLayers();
+	};
+
+	void pushTerrainLayer(std::pair<std::vector<std::string>, Terrain::PhongConfig> layer) {
+		printf("%s:%s:%d pushing functions with first one: %s and color of %f %f %f\n", __FILE__, __func__, __LINE__, layer.first[0].c_str(), layer.second.color.r, layer.second.color.g, layer.second.color.b);
+		
+		terrain->pushLayer(layer);
+	}
+
+	void evaluateTerrain() {
+		printf("%s:%s:%d computing height map\n", __FILE__, __func__, __LINE__);
+		terrain->evaluate();
+	};
+	void generateTerrain() {
+		printf("%s:%s:%d generate terrain vertices\n", __FILE__, __func__, __LINE__);
+		terrain->generate();
+	};
+
 protected:
 	bool init;						// Whether we've been initialized yet
 

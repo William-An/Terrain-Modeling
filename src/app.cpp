@@ -12,6 +12,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include "app.hpp"
+#include "terrain.hpp"
 
 // Constructor
 App::App(std::string configFile, QWidget* parent) : QWidget(parent) {
@@ -375,6 +376,8 @@ void App::initLayout(std::string configFile) {
 		randomSeedSpin->setValue(rand_seed);});
 
 	// Todo Generate button
+	connect(generateTerrainBtn, &QPushButton::clicked, [=] {
+		generateLayers();});
 
 	// Add surface
 	connect(addSurfaceBtn, &QPushButton::clicked, [=] {
@@ -1011,4 +1014,45 @@ void App::clearLayers() {
 	surfaces->clear();
 
 	printf("%s:%s:%d removing all layers\n", __FILE__, __func__, __LINE__);
+}
+
+void App::generateLayers() {
+	// Create the layer configurations to be passed into the glstate
+	GLState& state = glView->getGLState();
+	state.clearTerrainLayers();
+	
+	// Pushing functions
+	for (auto group_it = surfaces->begin(); group_it < surfaces->end(); group_it++) {
+		// Each layer
+		App::SurfaceWidgetGroup* surfaceGroup = *group_it;
+
+		// Get phong config
+		Terrain::PhongConfig config;
+		config.ambient = surfaceGroup->ambStrSpin->value();
+		config.diffuse = surfaceGroup->diffStrSpin->value();
+		config.specular = surfaceGroup->specStrSpin->value();
+		config.exponent = surfaceGroup->specExpSpin->value();
+		config.color.r = surfaceGroup->objColorRSpin->value();
+		config.color.g = surfaceGroup->objColorGSpin->value();
+		config.color.b = surfaceGroup->objColorBSpin->value();
+
+		// TODO create the checkbox for these config
+		config.enable = true;
+		config.drawSurface = true;
+		config.coverBottom = false;
+
+		std::vector<std::string> funcStrings;
+		std::vector<SurfaceWidgetGroup::SubSurfaceFunc*>* funcsWidget = surfaceGroup->subSurfaceFuncs;
+
+		// Each func
+		for (auto surface_it = funcsWidget->begin(); surface_it < funcsWidget->end(); surface_it++) {
+			SurfaceWidgetGroup::SubSurfaceFunc* func_widget = *surface_it;
+			funcStrings.push_back(func_widget->subSurfaceLine->text().toStdString());
+		}
+		state.pushTerrainLayer(std::pair(funcStrings, config));
+	}
+
+	state.evaluateTerrain();
+	state.generateTerrain();
+	state.paintGL();
 }

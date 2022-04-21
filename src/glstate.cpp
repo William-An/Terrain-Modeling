@@ -57,8 +57,8 @@ void GLState::initializeGL() {
 	terrain->initGL();
 	terrain->setSize(20, 20);
 	terrain->setSeed(1);
-	std::string name("Test");
-	terrain->setName(name);
+	// std::string name("Test");
+	// terrain->setName(name);
 	std::vector<std::string> functions;
 	std::vector<std::string> mountainFuncs;
 	std::vector<std::string> seaFuncs;
@@ -70,24 +70,24 @@ void GLState::initializeGL() {
 	// functions.push_back("pyramid(x, y, 0, 0, 0, 0, 0.5, -0.3, 1)");
 	// functions.push_back("pyramid(x, y, 0, 0, 0, 0, -0.5, 0.3, 1)");
 	// functions.push_back("pyramid(x, y, 0, 0, 0, 0.3, -0.3, 0, -1)");
-	functions.push_back("normal(x - 0.5, y + 0.3, 0.5, 0.5)");
-	functions.push_back("normal(x + 0.5, y - 0.3, 0.5, 0.5)");
-	functions.push_back("-normal(x, y, 0.5, 0.5)");
-	functions.push_back("perlin(x, y, 2^(N/2)) * 0.5");
-	functions.push_back("perlin(x, y, 2^(N/2)) * 0.05");
-	functions.push_back("perlin(x, y, 2^(N/2)) * 0.01");
-	functions.push_back("perlin(x, y, 2^(N/2)) * 0.005");
-	terrain->pushLayer(std::pair(functions, config));
+	// functions.push_back("normal(x - 0.5, y + 0.3, 0.5, 0.5)");
+	// functions.push_back("normal(x + 0.5, y - 0.3, 0.5, 0.5)");
+	// functions.push_back("-normal(x, y, 0.5, 0.5)");
+	// functions.push_back("perlin(x, y, 2^(N/2)) * 0.5");
+	// functions.push_back("perlin(x, y, 2^(N/2)) * 0.05");
+	// functions.push_back("perlin(x, y, 2^(N/2)) * 0.01");
+	// functions.push_back("perlin(x, y, 2^(N/2)) * 0.005");
+	// terrain->pushLayer(std::pair(functions, config));
 
-	mountainFuncs.push_back("perlin(x, y, 2^4) * 0.5 + 0.5");
-	seaFuncs.push_back("perlin(x, y, 2^1) * 0.05");
+	// mountainFuncs.push_back("perlin(x, y, 2^4) * 0.5 + 0.5");
+	// seaFuncs.push_back("perlin(x, y, 2^1) * 0.05");
 	
-	terrain->pushLayer(std::pair(mountainFuncs, mountainConfig));
-	terrain->pushLayer(std::pair(seaFuncs, seaConfig));
+	// terrain->pushLayer(std::pair(mountainFuncs, mountainConfig));
+	// terrain->pushLayer(std::pair(seaFuncs, seaConfig));
 	
-	// TODO: Need a button to call regenerate
-	terrain->evaluate();
-	terrain->generate();
+	// // TODO: Need a button to call regenerate
+	// terrain->evaluate();
+	// terrain->generate();
 
 	// Set initialized state
 	init = true;
