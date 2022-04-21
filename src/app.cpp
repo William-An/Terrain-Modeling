@@ -76,13 +76,27 @@ void App::initLayout(std::string configFile) {
 	generalLayout->addWidget(terrainNameLbl, 1, 0);
 	generalLayout->addWidget(terrainName, 1, 1);
 
+	// Terrain size control
+	QHBoxLayout* terrainSizeControlLayout = new QHBoxLayout;
+	terrainWidth = new QSpinBox(this);
+	terrainLength = new QSpinBox(this);
+	terrainWidth->setRange(0, 4096);
+	terrainWidth->setValue(20);
+	terrainLength->setRange(0, 4096);
+	terrainLength->setValue(20);
+	terrainSizeControlLayout->addWidget(new QLabel("Width:"));
+	terrainSizeControlLayout->addWidget(terrainWidth);
+	terrainSizeControlLayout->addWidget(new QLabel("Length:"));
+	terrainSizeControlLayout->addWidget(terrainLength);
+	generalLayout->addLayout(terrainSizeControlLayout, 2, 0, 1, 2);
+
 	// Randomized seed and generate terrain button
 	QHBoxLayout* terrainGenerationLayout = new QHBoxLayout;
 	randomizedBtn = new QPushButton("Random", this);
 	generateTerrainBtn = new QPushButton("Generate", this);
 	terrainGenerationLayout->addWidget(randomizedBtn);
 	terrainGenerationLayout->addWidget(generateTerrainBtn);
-	generalLayout->addLayout(terrainGenerationLayout, 2, 0, 1, 2);
+	generalLayout->addLayout(terrainGenerationLayout, 3, 0, 1, 2);
 
 	// Surface control buttons
 	QHBoxLayout* surfaceControlLayout = new QHBoxLayout;
@@ -90,7 +104,7 @@ void App::initLayout(std::string configFile) {
 	clearSurfaceBtn = new QPushButton("Clear all surfaces", this);
 	surfaceControlLayout->addWidget(addSurfaceBtn);
 	surfaceControlLayout->addWidget(clearSurfaceBtn);
-	generalLayout->addLayout(surfaceControlLayout, 3, 0, 1, 2);
+	generalLayout->addLayout(surfaceControlLayout, 4, 0, 1, 2);
 
 	// Load and dump config buttons
 	QHBoxLayout* configLoadSaveControlLayout = new QHBoxLayout;
@@ -98,7 +112,7 @@ void App::initLayout(std::string configFile) {
 	dumpTerrainConfigBtn = new QPushButton("Save", this);
 	configLoadSaveControlLayout->addWidget(loadTerrainConfigBtn);
 	configLoadSaveControlLayout->addWidget(dumpTerrainConfigBtn);
-	generalLayout->addLayout(configLoadSaveControlLayout, 4, 0, 1, 2);
+	generalLayout->addLayout(configLoadSaveControlLayout, 5, 0, 1, 2);
 
 	// Normal mode selection
 	QHBoxLayout* normalsLayout = new QHBoxLayout;
@@ -111,7 +125,7 @@ void App::initLayout(std::string configFile) {
 	faceNormalsRadio = new QRadioButton("Flat", this);
 	normalsLayout->addWidget(faceNormalsRadio);
 	normalsGroup->addButton(faceNormalsRadio);
-	generalLayout->addLayout(normalsLayout, 5, 0, 1, 2);
+	generalLayout->addLayout(normalsLayout, 6, 0, 1, 2);
 
 	// Shading mode selection
 	QHBoxLayout* shadingLayout = new QHBoxLayout;
@@ -124,7 +138,7 @@ void App::initLayout(std::string configFile) {
 	normalsShadingRadio = new QRadioButton("Normals", this);
 	shadingLayout->addWidget(normalsShadingRadio);
 	shadingGroup->addButton(normalsShadingRadio);
-	generalLayout->addLayout(shadingLayout, 6, 0, 1, 2);
+	generalLayout->addLayout(shadingLayout, 7, 0, 1, 2);
 	// End of general control
 
 	// Material properties
@@ -363,19 +377,25 @@ void App::initLayout(std::string configFile) {
 	topLayout->addLayout(lightLayout);
 
 	// Conntect random seed spiner to glstate
-	connect(randomSeedSpin, QOverload<int>::of(&QSpinBox::valueChanged), [=](int value) {
-		glView->getGLState().terrain->setSeed(value); });
+	connect(randomSeedSpin, QOverload<int>::of(&QSpinBox::valueChanged), [=] {
+		setRandomSeed();});
 
 	// Set name
 	connect(terrainName, &QLineEdit::textChanged, [=](const QString &text) {
 		glView->getGLState().terrain->setName(text.toStdString()); });
 
+	// Change size
+	connect(terrainWidth, QOverload<int>::of(&QSpinBox::valueChanged), [=] {
+		setTerrainSize();});
+	connect(terrainLength, QOverload<int>::of(&QSpinBox::valueChanged), [=] {
+		setTerrainSize();});
+
 	// Random button
 	connect(randomizedBtn, &QPushButton::clicked, [=] {
 		int rand_seed = dist(rd);
-		randomSeedSpin->setValue(rand_seed);});
+		randomSeedSpin->setValue(rand_seed);
+		generateLayers();});
 
-	// Todo Generate button
 	connect(generateTerrainBtn, &QPushButton::clicked, [=] {
 		generateLayers();});
 
@@ -532,6 +552,11 @@ void App::initLayout(std::string configFile) {
 
 			// Read the initial config file
 			glView->readConfigFile(configFile);
+
+			// Set terrain to the setting
+			setTerrainSize();
+			setRandomSeed();
+			generateLayers();
 		});
 	// Update configuration when a config file is read
 	connect(glView, &GLView::configChanged, [=]() {
@@ -832,7 +857,7 @@ int main(int argc, char** argv) {
 	}
 }
 
-App::SurfaceWidgetGroup::SurfaceWidgetGroup(int index, QWidget *parent): QGroupBox(parent) {
+App::SurfaceWidgetGroup::SurfaceWidgetGroup(int index, int randomNum, QWidget *parent): QGroupBox(parent) {
 	surface_index = index;
 
 	// TODO Constructing group box layout
@@ -849,7 +874,9 @@ App::SurfaceWidgetGroup::SurfaceWidgetGroup(int index, QWidget *parent): QGroupB
 	ambStrSpin = new QDoubleSpinBox(this);
 	ambStrSpin->setRange(0, 1);
 	ambStrSpin->setSingleStep(0.05);
+	ambStrSpin->setDecimals(3);
 	ambStrSpin->sizePolicy().setHorizontalStretch(1);
+	ambStrSpin->setValue(1.0 / (50 + randomNum % 50));
 	paramGridLayout->addWidget(ambLbl, 0, 0);
 	paramGridLayout->addWidget(ambStrSpin, 0, 1);
 
@@ -858,7 +885,9 @@ App::SurfaceWidgetGroup::SurfaceWidgetGroup(int index, QWidget *parent): QGroupB
 	diffStrSpin = new QDoubleSpinBox(this);
 	diffStrSpin->setRange(0, 1);
 	diffStrSpin->setSingleStep(0.05);
+	diffStrSpin->setDecimals(3);
 	diffStrSpin->sizePolicy().setHorizontalStretch(1);
+	diffStrSpin->setValue(1.0 / (2 + randomNum % 3));
 	paramGridLayout->addWidget(diffLbl, 0, 2);
 	paramGridLayout->addWidget(diffStrSpin, 0, 3);
 
@@ -867,6 +896,8 @@ App::SurfaceWidgetGroup::SurfaceWidgetGroup(int index, QWidget *parent): QGroupB
 	specStrSpin = new QDoubleSpinBox(this);
 	specStrSpin->setRange(0, 1);
 	specStrSpin->setSingleStep(0.05);
+	specStrSpin->setDecimals(3);
+	specStrSpin->setValue(1);
 	specStrSpin->sizePolicy().setHorizontalStretch(1);
 	paramGridLayout->addWidget(specLbl, 1, 0);
 	paramGridLayout->addWidget(specStrSpin, 1, 1);
@@ -875,6 +906,8 @@ App::SurfaceWidgetGroup::SurfaceWidgetGroup(int index, QWidget *parent): QGroupB
 	expLbl->sizePolicy().setHorizontalStretch(1);
 	specExpSpin = new QDoubleSpinBox(this);
 	specExpSpin->setRange(0, 1024);
+	specExpSpin->setDecimals(2);
+	specExpSpin->setValue(8);
 	specExpSpin->setStepType(QAbstractSpinBox::StepType::AdaptiveDecimalStepType);
 	specExpSpin->sizePolicy().setHorizontalStretch(1);
 	paramGridLayout->addWidget(expLbl, 1, 2);
@@ -884,16 +917,26 @@ App::SurfaceWidgetGroup::SurfaceWidgetGroup(int index, QWidget *parent): QGroupB
 	objColorRSpin = new QSpinBox(this);
 	objColorRSpin->setRange(0, 255);
 	objColorRSpin->sizePolicy().setHorizontalStretch(1);
+	objColorRSpin->setValue(randomNum % 200 + 20);
 	objColorGSpin = new QSpinBox(this);
 	objColorGSpin->setRange(0, 255);
 	objColorGSpin->sizePolicy().setHorizontalStretch(1);
+	objColorGSpin->setValue(randomNum % 150 + 40);
 	objColorBSpin = new QSpinBox(this);
 	objColorBSpin->setRange(0, 255);
 	objColorBSpin->sizePolicy().setHorizontalStretch(1);
+	objColorBSpin->setValue(randomNum % 100 + 30);
 	paramGridLayout->addWidget(objColorLbl, 2, 0);
 	paramGridLayout->addWidget(objColorRSpin, 2, 1);
 	paramGridLayout->addWidget(objColorGSpin, 2, 2);
 	paramGridLayout->addWidget(objColorBSpin, 2, 3);
+
+	colorPickerBtn = new QPushButton("Pick a Color", this);
+	colorSelected = new QLabel(this);
+	colorPicker = new QColorDialog(this);
+	paramGridLayout->addWidget(colorPickerBtn, 3, 0, 1, 2);
+	paramGridLayout->addWidget(colorSelected, 3, 2, 1, 2);
+	paramGridLayout->addWidget(colorPicker);
 
 	surfaceLayout->addLayout(paramGridLayout);
 
@@ -914,13 +957,39 @@ App::SurfaceWidgetGroup::SurfaceWidgetGroup(int index, QWidget *parent): QGroupB
 
 	surfaceLayout->addLayout(subSurfaceFuncsLayout);
 
-	// TODO Connecting callbacks
+	auto changeColorSelected = [=] {
+		QColor color(objColorRSpin->value(), objColorGSpin->value(), objColorBSpin->value());
+		QPalette palette = colorSelected->palette();
+		palette.setColor(colorSelected->backgroundRole(), color);    
+		colorSelected->setAutoFillBackground(true);
+		colorSelected->setPalette(palette);
+	};
+
+	// Control buttons
 	connect(addSurfaceFuncBtn, &QPushButton::clicked, [=] {
 		addSurfaceFunc();});
 	connect(clearSurfaceBtn, &QPushButton::clicked, [=] {
 		clearAllSubSurfaces();});
 	connect(removeSurfaceBtn, &QPushButton::clicked, [=] {
 		((App*) parent)->removeLayer(this);});
+
+	// Color selection
+	connect(colorPickerBtn, &QAbstractButton::clicked, [=] {
+		colorPicker->open();
+	});
+	connect(colorPicker, &QColorDialog::colorSelected, [=] (const QColor& color) {
+		int r, g, b;
+		color.getRgb(&r, &g, &b);
+		objColorRSpin->setValue(r);
+		objColorGSpin->setValue(g);
+		objColorBSpin->setValue(b);
+	});
+	connect(objColorRSpin, QOverload<int>::of(&QSpinBox::valueChanged), changeColorSelected);
+	connect(objColorGSpin, QOverload<int>::of(&QSpinBox::valueChanged), changeColorSelected);
+	connect(objColorBSpin, QOverload<int>::of(&QSpinBox::valueChanged), changeColorSelected);
+
+	// Set initial color
+	changeColorSelected();
 }
 
 void App::SurfaceWidgetGroup::addSurfaceFunc() {
@@ -996,7 +1065,8 @@ void App::removeLayer(SurfaceWidgetGroup* layer) {
 
 void App::addLayer() {
 	int index = surfaces->size();
-	SurfaceWidgetGroup* layer = new SurfaceWidgetGroup(index, this);
+	int randomNum = dist(rd);
+	SurfaceWidgetGroup* layer = new SurfaceWidgetGroup(index, randomNum, this);
 	surfaces->push_back(layer);
 	surfacesLayout->addWidget(layer);
 	// todo Resize after adding one
@@ -1049,10 +1119,25 @@ void App::generateLayers() {
 			SurfaceWidgetGroup::SubSurfaceFunc* func_widget = *surface_it;
 			funcStrings.push_back(func_widget->subSurfaceLine->text().toStdString());
 		}
-		state.pushTerrainLayer(std::pair(funcStrings, config));
+
+		// Make sure we don't pass empty funcs vector
+		if (!funcStrings.empty())
+			state.pushTerrainLayer(std::pair(funcStrings, config));
 	}
 
 	state.evaluateTerrain();
 	state.generateTerrain();
 	state.paintGL();
+}
+
+void App::setRandomSeed() {
+	int value = randomSeedSpin->value();
+	glView->getGLState().terrain->setSeed(value);
+}
+
+void App::setTerrainSize() {
+	int width = terrainWidth->value();
+	int length = terrainLength->value();
+	printf("W: %d L: %d\n", width, length);
+	glView->getGLState().terrain->setSize(width, length);
 }

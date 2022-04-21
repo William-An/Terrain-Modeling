@@ -18,6 +18,7 @@
 #include <QLineEdit>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QColorDialog>
 #include "glview.hpp"
 
 // Application window
@@ -82,6 +83,9 @@ public:
 			QDoubleSpinBox* diffStrSpin;
 			QDoubleSpinBox* specStrSpin;
 			QDoubleSpinBox* specExpSpin;
+			QPushButton* colorPickerBtn;
+			QColorDialog* colorPicker;
+			QLabel* colorSelected; 
 			QSpinBox* objColorRSpin;
 			QSpinBox* objColorGSpin;
 			QSpinBox* objColorBSpin;
@@ -92,7 +96,7 @@ public:
 			QVBoxLayout* subSurfaceFuncsLayout;	// Handle to add and remove func sublayer
 
 			// TODO Should have a view returned to construct in top level
-			SurfaceWidgetGroup(int index, QWidget *parent = nullptr);
+			SurfaceWidgetGroup(int index, int randomNum = 1, QWidget *parent = nullptr);
 
 			// Add a sub surface func input and add to surfaceFuncsLayout
 			void addSurfaceFunc();
@@ -119,6 +123,8 @@ public:
 		printf("Maximu: %d\n", end);
 		scrollArea->verticalScrollBar()->setValue(end);
 	};
+	void setRandomSeed();
+	void setTerrainSize();
 	void generateLayers();
 
 
@@ -158,6 +164,8 @@ private:
 	// General control
 	QSpinBox* randomSeedSpin;			// Random seed dialog
 	QLineEdit* terrainName;
+	QSpinBox* terrainWidth;
+	QSpinBox* terrainLength;
 	QPushButton* randomizedBtn;			// Roll for a new seed
 	QPushButton* generateTerrainBtn;	// Generate terrain based on current config
 	QPushButton* addSurfaceBtn;			// Add a surface control
