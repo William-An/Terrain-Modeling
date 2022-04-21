@@ -15,6 +15,8 @@
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
+#include <QScrollArea>
+#include <QScrollBar>
 #include "glview.hpp"
 
 // Application window
@@ -99,10 +101,24 @@ public:
 
 			// Remove all sub surfaces
 			void clearAllSubSurfaces();
+
+			// Set index
+			void setIndex(int i) {
+				surface_index = i;
+				this->setTitle(QString("Surface No. %1:").arg(i));
+			}
 	};
 
-	// TODO remove a surface layer at index
-	void removeLayer(int index) {};
+	void addLayer();
+	// remove a surface layer 
+	void removeLayer(SurfaceWidgetGroup* layer);
+	void clearLayers();
+	void scrollControlToEnd() {
+		int end = scrollArea->verticalScrollBar()->maximum();
+		printf("Maximu: %d\n", end);
+		scrollArea->verticalScrollBar()->setValue(end);
+	};
+
 
 
 protected:
@@ -116,6 +132,7 @@ private:
 
 	// Widgets
 	GLView* glView;
+	QScrollArea* scrollArea;
 	QComboBox* meshSelectCombo;
 	QRadioButton* faceNormalsRadio;
 	QRadioButton* smoothNormalsRadio;
@@ -144,6 +161,7 @@ private:
 	QPushButton* dumpTerrainConfigBtn;
 
 	// Surface control
+	QVBoxLayout* surfacesLayout;
 	std::vector<App::SurfaceWidgetGroup*>* surfaces;
 
 	// Light 1 controls

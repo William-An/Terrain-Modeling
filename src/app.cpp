@@ -41,7 +41,7 @@ void App::initLayout(std::string configFile) {
 	setLayout(topLayout);
 
 	// Surfaces layout
-	QVBoxLayout* surfacesLayout = new QVBoxLayout;
+	surfacesLayout = new QVBoxLayout;
 
 	// Lights layout
 	QVBoxLayout* lightLayout = new QVBoxLayout;
@@ -181,8 +181,7 @@ void App::initLayout(std::string configFile) {
 	// Surfaces Layout
 	// Add an init surface
 	surfaces = new std::vector<App::SurfaceWidgetGroup*>();
-	surfaces->push_back(new App::SurfaceWidgetGroup(0));
-	surfacesLayout->addWidget(surfaces->at(0));
+	addLayer();
 
 	controlLayout->addLayout(surfacesLayout);
 	controlLayout->addStretch();
@@ -190,7 +189,8 @@ void App::initLayout(std::string configFile) {
 	// Control layout done
 
 	// Scrollable area
-	QScrollArea* scrollArea = new QScrollArea(this);
+	scrollArea = new QScrollArea(this);
+	scrollArea->setWidgetResizable(true);
 	scrollArea->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 	scrollArea->setWidget(controlWidget);
 	scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -366,6 +366,22 @@ void App::initLayout(std::string configFile) {
 	connect(randomSeedSpin, QOverload<int>::of(&QSpinBox::valueChanged), [=](int value) {
 		glView->getGLState().terrain->setSeed(value); });
 
+	// Set name
+	connect(terrainName, &QLineEdit::textChanged, [=](const QString &text) {
+		glView->getGLState().terrain->setName(text.toStdString()); });
+
+	// Add surface
+	connect(addSurfaceBtn, &QPushButton::clicked, [=] {
+		addLayer();
+		
+		// Scroll to the bottom	
+		scrollControlToEnd();
+	});
+	
+	// Clear all surfaces
+	connect(clearSurfaceBtn, &QPushButton::clicked, [=] {
+		clearLayers();});
+
 	// Update normal mode
 	connect(faceNormalsRadio, &QRadioButton::clicked, [=](bool checked) {
 			if (!checked) return;
@@ -394,6 +410,8 @@ void App::initLayout(std::string configFile) {
 			glView->getGLState().setShadingMode(GLState::SHADINGMODE_GOURAUD);
 			glView->update();
 		});
+
+
 
 	// Update ambient strength
 	connect(ambStrSlider, &QSlider::valueChanged, [=](int value) {
@@ -732,6 +750,8 @@ void App::initLayout(std::string configFile) {
 			specExpSlider->setValue(specExpVal);
 			specExpValLbl->setText(QString::number(specExp, 'f', 2));
 		});
+
+	
 	// Update active light radio button
 	connect(glView, &GLView::activeLightChanged, [=](int index) {
 			switch (index) {
@@ -869,13 +889,12 @@ App::SurfaceWidgetGroup::SurfaceWidgetGroup(int index, QWidget *parent): QGroupB
 	// TODO Constructing group box layout
 	// Use Grid layout
 	surfaceLayout = new QVBoxLayout(this);
-	this->setLayout(surfaceLayout);
 
 	// Layer number
-	this->setTitle(QString("Layer No. %1:").arg(index));
+	this->setTitle(QString("Surface No. %1:").arg(index));
 
 	// Phong Model parameters
-	QGridLayout* paramGridLayout = new QGridLayout(this);
+	QGridLayout* paramGridLayout = new QGridLayout();
 	QLabel* ambLbl = new QLabel("Ambient", this);
 	ambLbl->sizePolicy().setHorizontalStretch(1);
 	ambStrSpin = new QDoubleSpinBox(this);
@@ -952,7 +971,7 @@ App::SurfaceWidgetGroup::SurfaceWidgetGroup(int index, QWidget *parent): QGroupB
 	connect(clearSurfaceBtn, &QPushButton::clicked, [=] {
 		clearAllSubSurfaces();});
 	connect(removeSurfaceBtn, &QPushButton::clicked, [=] {
-		((App*) parent)->removeLayer(surface_index);});
+		((App*) parent)->removeLayer(this);});
 }
 
 void App::SurfaceWidgetGroup::addSurfaceFunc() {
@@ -964,7 +983,6 @@ void App::SurfaceWidgetGroup::addSurfaceFunc() {
 }
 
 void App::SurfaceWidgetGroup::removeSubSurfaceFunc(QWidget* subSurf) {
-	
 	auto remove_it = subSurfaceFuncs->begin();
 
 	// Find the item to delete
@@ -1003,4 +1021,48 @@ void App::SurfaceWidgetGroup::clearAllSubSurfaces() {
 	subSurfaceFuncs->clear();
 
 	printf("%s:%s:%d removing all sub surfaces\n", __FILE__, __func__, __LINE__);
+}
+
+void App::removeLayer(SurfaceWidgetGroup* layer) {
+	auto remove_it = std::find(surfaces->begin(), surfaces->end(), layer);
+	if (remove_it == surfaces->end())
+		return;
+
+	// Reset index
+	int remove_index = (*remove_it)->surface_index;
+	for (auto it = remove_it + 1; it < surfaces->end(); it++) {
+		(*it)->setIndex((*it)->surface_index - 1);
+	}
+
+	// Remove from layout first and set to invisible
+	auto surface = *remove_it;
+	surfacesLayout->removeWidget(surface);
+	surface->setVisible(false);
+
+	// Destory it
+	surfaces->erase(remove_it);
+
+	printf("%s:%s:%d removing layer index %d\n", __FILE__, __func__, __LINE__, remove_index);
+};
+
+void App::addLayer() {
+	int index = surfaces->size();
+	SurfaceWidgetGroup* layer = new SurfaceWidgetGroup(index, this);
+	surfaces->push_back(layer);
+	surfacesLayout->addWidget(layer);
+	// todo Resize after adding one
+	// surfacesLayout->
+	printf("%s:%s:%d adding layer index %d\n", __FILE__, __func__, __LINE__, index);
+}
+
+void App::clearLayers() {
+	// Remove all widget first
+	for (auto it = surfaces->begin(); it < surfaces->end(); it++) {
+		surfacesLayout->removeWidget(*it);
+		auto widget = *it;
+		widget->setVisible(false);
+	}
+	surfaces->clear();
+
+	printf("%s:%s:%d removing all layers\n", __FILE__, __func__, __LINE__);
 }

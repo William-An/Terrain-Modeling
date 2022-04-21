@@ -70,7 +70,7 @@ public:
     void setSeed(int64_t s) {seed = s;};
     int64_t getSeed() {return seed;};
 
-    void setName(std::string& n) {name = n;};
+    void setName(std::string n) {name = n;};
     std::string& getName() {return name;};
 
     void setSize(uint32_t w, uint32_t l) {width = w; length = l;};
