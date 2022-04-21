@@ -29,10 +29,6 @@ void Terrain::initGL() {
     glUseProgram(shader);
     GLuint uniformConfigBlocIndx = glGetUniformBlockIndex(shader, "PhongConfigBlock");
     glUniformBlockBinding(shader, uniformConfigBlocIndx, BIND_PT);
-
-    // Generate texture obj
-    glGenTextures(1, &heightMap);
-    printf("Loc for texture: %d\n", heightMap);
 }
 
 void Terrain::load(std::string& config_file_path) {
@@ -113,8 +109,10 @@ void Terrain::evaluate() {
 }
 
 void Terrain::generate() {
-    // TODO from raw_layers, generate faces, flat norms, and smooth norms
-    // TODO Just plot the terrain first, layer of sea should be done later
+    // Release previous resource
+    release();
+
+    // Compute triangles num to plot
     int num_triangles = (length - 1) * (width - 1) * 2;
 
     for (int layer_idx = 0; layer_idx < raw_layers.size(); layer_idx++) {
@@ -286,6 +284,8 @@ void Terrain::draw() {
     }
 
     // Passing texture
+    glGenTextures(1, &heightMap);
+    printf("Loc for texture: %d\n", heightMap);
     glBindTexture(GL_TEXTURE_2D_ARRAY, heightMap);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -312,6 +312,28 @@ void Terrain::draw() {
         }
     }
 
+}
+
+void Terrain::release() {
+    for (int i = 0; i < MAX_LAYERS; i++) {
+        if (vaos[i]) {
+            glDeleteVertexArrays(1, &vaos[i]); 
+            vaos[i] = 0; 
+        }
+        if (vbufs[i]) {
+            glDeleteBuffers(1, &vbufs[i]); 
+            vbufs[i] = 0; 
+        }
+    }
+	vcount = 0;
+
+    if (heightMap) {
+        glDeleteTextures(1, &heightMap);
+        heightMap = 0;
+    }
+
+    std::vector<PhongConfig> emptyLayerConfigs(MAX_LAYERS);
+	glBufferData(GL_UNIFORM_BUFFER, emptyLayerConfigs.size() * sizeof(PhongConfig), emptyLayerConfigs.data(), GL_STATIC_DRAW);
 }
 
 void Terrain::printMatrix(int indx) {

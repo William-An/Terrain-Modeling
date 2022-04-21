@@ -860,7 +860,6 @@ int main(int argc, char** argv) {
 App::SurfaceWidgetGroup::SurfaceWidgetGroup(int index, int randomNum, QWidget *parent): QGroupBox(parent) {
 	surface_index = index;
 
-	// TODO Constructing group box layout
 	// Use Grid layout
 	surfaceLayout = new QVBoxLayout(this);
 
