@@ -89,6 +89,8 @@ public:
 			QSpinBox* objColorRSpin;
 			QSpinBox* objColorGSpin;
 			QSpinBox* objColorBSpin;
+			QCheckBox* enableSurfaceCB;
+			QCheckBox* drawSurfaceCB;
 			QPushButton* addSurfaceFuncBtn;		// Add a line of the func
 			QPushButton* clearSurfaceBtn;		// Remove all functions
 			QPushButton* removeSurfaceBtn;		// Delete this widget group

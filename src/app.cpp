@@ -950,6 +950,16 @@ App::SurfaceWidgetGroup::SurfaceWidgetGroup(int index, int randomNum, QWidget *p
 	controlBtnsLayout->addWidget(removeSurfaceBtn);
 	surfaceLayout->addLayout(controlBtnsLayout);
 
+	// Control checkboxs
+	QHBoxLayout* controlCBLayout = new QHBoxLayout;
+	enableSurfaceCB = new QCheckBox("Enable Surface", this);
+	drawSurfaceCB = new QCheckBox("Draw Surface", this);
+	enableSurfaceCB->setCheckState(Qt::CheckState::Checked);
+	drawSurfaceCB->setCheckState(Qt::CheckState::Checked);
+	controlCBLayout->addWidget(enableSurfaceCB);
+	controlCBLayout->addWidget(drawSurfaceCB);
+	surfaceLayout->addLayout(controlCBLayout);
+
 	// Surface functions control
 	subSurfaceFuncs = new std::vector<SubSurfaceFunc*>();
 	subSurfaceFuncsLayout = new QVBoxLayout;
@@ -1107,8 +1117,8 @@ void App::generateLayers() {
 		config.color.b = surfaceGroup->objColorBSpin->value();
 
 		// TODO create the checkbox for these config
-		config.enable = true;
-		config.drawSurface = true;
+		config.enable = surfaceGroup->enableSurfaceCB->checkState() == Qt::CheckState::Checked;
+		config.drawSurface =surfaceGroup->drawSurfaceCB->checkState() == Qt::CheckState::Checked;
 		config.coverBottom = false;
 
 		std::vector<std::string> funcStrings;
