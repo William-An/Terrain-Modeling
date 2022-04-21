@@ -1,6 +1,7 @@
 #ifndef APP_HPP
 #define APP_HPP
 
+#include <random>
 #include <QWidget>
 #include <QComboBox>
 #include <QRadioButton>
@@ -120,7 +121,6 @@ public:
 	};
 
 
-
 protected:
 	// Event handlers
 	void keyReleaseEvent(QKeyEvent* e);
@@ -129,6 +129,10 @@ private:
 	// Initialization
 	void initLayout(std::string configFile);
 	void findModels();
+
+	// Random device
+	std::uniform_int_distribution<int> dist;
+	std::mt19937 rd;
 
 	// Widgets
 	GLView* glView;

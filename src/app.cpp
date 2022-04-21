@@ -15,8 +15,9 @@
 
 // Constructor
 App::App(std::string configFile, QWidget* parent) : QWidget(parent) {
-	setWindowTitle("Qt Window");
-
+	setWindowTitle(QString("Procedural Modeling Terrain"));
+	dist = std::uniform_int_distribution<int>(0, INT_MAX);
+	rd   = std::mt19937();
 	initLayout(configFile);
 }
 
@@ -127,7 +128,7 @@ void App::initLayout(std::string configFile) {
 
 	// Material properties
 	QGroupBox* materialGroup = new QGroupBox("Material properties", this);
-	controlLayout->addWidget(materialGroup);
+	// controlLayout->addWidget(materialGroup);
 	QGridLayout* materialLayout = new QGridLayout;
 	materialGroup->setLayout(materialLayout);
 	// Ambient strength
@@ -360,8 +361,6 @@ void App::initLayout(std::string configFile) {
 
 	topLayout->addLayout(lightLayout);
 
-
-
 	// Conntect random seed spiner to glstate
 	connect(randomSeedSpin, QOverload<int>::of(&QSpinBox::valueChanged), [=](int value) {
 		glView->getGLState().terrain->setSeed(value); });
@@ -369,6 +368,13 @@ void App::initLayout(std::string configFile) {
 	// Set name
 	connect(terrainName, &QLineEdit::textChanged, [=](const QString &text) {
 		glView->getGLState().terrain->setName(text.toStdString()); });
+
+	// Random button
+	connect(randomizedBtn, &QPushButton::clicked, [=] {
+		int rand_seed = dist(rd);
+		randomSeedSpin->setValue(rand_seed);});
+
+	// Todo Generate button
 
 	// Add surface
 	connect(addSurfaceBtn, &QPushButton::clicked, [=] {
@@ -405,66 +411,6 @@ void App::initLayout(std::string configFile) {
 			glView->getGLState().setShadingMode(GLState::SHADINGMODE_PHONG);
 			glView->update();
 		});
-	connect(gouraudShadingRadio, &QRadioButton::clicked, [=](bool checked) {
-			if (!checked) return;
-			glView->getGLState().setShadingMode(GLState::SHADINGMODE_GOURAUD);
-			glView->update();
-		});
-
-
-
-	// Update ambient strength
-	connect(ambStrSlider, &QSlider::valueChanged, [=](int value) {
-			float ambStr = ((float)value - (float)ambStrSlider->minimum()) /
-				((float)ambStrSlider->maximum() - (float)ambStrSlider->minimum());
-			ambStr = glm::pow(ambStr, 3.0f);
-			ambStrValLbl->setText(QString::number(ambStr, 'f', 3));
-			glView->getGLState().setAmbientStrength(ambStr);
-			glView->update();
-		});
-
-	// Update diffuse strength
-	connect(diffStrSlider, &QSlider::valueChanged, [=](int value) {
-			float diffStr = ((float)value - (float)diffStrSlider->minimum()) /
-				((float)diffStrSlider->maximum() - (float)diffStrSlider->minimum());
-			diffStrValLbl->setText(QString::number(diffStr, 'f', 2));
-			glView->getGLState().setDiffuseStrength(diffStr);
-			glView->update();
-		});
-
-	// Update specular strength
-	connect(specStrSlider, &QSlider::valueChanged, [=](int value) {
-			float specStr = ((float)value - (float)specStrSlider->minimum()) /
-				((float)specStrSlider->maximum() - (float)specStrSlider->minimum());
-			specStrValLbl->setText(QString::number(specStr, 'f', 2));
-			glView->getGLState().setSpecularStrength(specStr);
-			glView->update();
-		});
-
-	// Update specular exponent
-	connect(specExpSlider, &QSlider::valueChanged, [=](int value) {
-			float minPow2 = 0.0f, maxPow2 = 10.0f;
-			float specExp = ((float)value - specExpSlider->minimum()) /
-				((float)specExpSlider->maximum() - (float)specExpSlider->minimum());
-			specExp = specExp * (maxPow2 - minPow2) + minPow2;
-			specExp = glm::pow(2.0f, specExp);
-			specExpValLbl->setText(QString::number(specExp, 'f', 2));
-			glView->getGLState().setSpecularExponent(specExp);
-			glView->update();
-		});
-
-	// Update object color
-	auto updateObjColor = [=]() {
-			glm::vec3 objColor;
-			objColor.r = objColorRSpin->value() / 255.0f;
-			objColor.g = objColorGSpin->value() / 255.0f;
-			objColor.b = objColorBSpin->value() / 255.0f;
-			glView->getGLState().setObjectColor(objColor);
-			glView->update();
-		};
-	connect(objColorRSpin, QOverload<int>::of(&QSpinBox::valueChanged), updateObjColor);
-	connect(objColorGSpin, QOverload<int>::of(&QSpinBox::valueChanged), updateObjColor);
-	connect(objColorBSpin, QOverload<int>::of(&QSpinBox::valueChanged), updateObjColor);
 
 	// Light update lambdas
 	auto updateLightEnabled = [=](int idx, bool enabled) {
