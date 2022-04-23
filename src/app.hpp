@@ -19,6 +19,7 @@
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QColorDialog>
+#include <QFileDialog>
 #include "glview.hpp"
 
 // Application window
@@ -27,6 +28,7 @@ class App : public QWidget {
 public:
 	App(std::string configFile, QWidget* parent = NULL);
 	
+protected:
 	// Surface group
 	class SurfaceWidgetGroup : public QGroupBox {
 		public:
@@ -128,9 +130,10 @@ public:
 	void setRandomSeed();
 	void setTerrainSize();
 	void generateLayers();
+	void loadConfigFile(QString& filepath);
+	void saveConfigFile(QString& filepath);
 
 
-protected:
 	// Event handlers
 	void keyReleaseEvent(QKeyEvent* e);
 

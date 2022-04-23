@@ -109,8 +109,8 @@ void Terrain::evaluate() {
 }
 
 void Terrain::generate() {
-    // Release previous resource
-    release();
+    // TODO Release previous resource
+    // release();
 
     // Compute triangles num to plot
     int num_triangles = (length - 1) * (width - 1) * 2;

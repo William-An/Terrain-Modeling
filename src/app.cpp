@@ -11,6 +11,7 @@
 #include <QGridLayout>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QFile>
 #include "app.hpp"
 #include "terrain.hpp"
 
@@ -410,6 +411,19 @@ void App::initLayout(std::string configFile) {
 	// Clear all surfaces
 	connect(clearSurfaceBtn, &QPushButton::clicked, [=] {
 		clearLayers();});
+
+	// Load and save config
+	connect(loadTerrainConfigBtn, &QPushButton::clicked, [=] {
+		QString configFile = QFileDialog::getOpenFileName(this, "Select config file", ".");
+		printf("%s:%s:%d opening config file %s\n", __FILE__, __func__, __LINE__, configFile.toStdString().c_str());
+		loadConfigFile(configFile);
+	});
+
+	connect(dumpTerrainConfigBtn, &QPushButton::clicked, [=] {
+		QString saveFile = QFileDialog::getSaveFileName(this, "Enter save file name", ".");
+		printf("%s:%s:%d saving config to file %s\n", __FILE__, __func__, __LINE__, saveFile.toStdString().c_str());
+		saveConfigFile(saveFile);
+	});
 
 	// Update normal mode
 	connect(faceNormalsRadio, &QRadioButton::clicked, [=](bool checked) {
@@ -1149,4 +1163,168 @@ void App::setTerrainSize() {
 	int length = terrainLength->value();
 	printf("W: %d L: %d\n", width, length);
 	glView->getGLState().terrain->setSize(width, length);
+}
+
+void App::loadConfigFile(QString& filepath) {
+	QFile* configFp = new QFile(filepath);
+	configFp->open(QIODevice::Text | QIODevice::ReadOnly);
+
+	// Clear current surfaces
+	clearLayers();
+
+	// Current surface
+	App::SurfaceWidgetGroup* currentSurf = nullptr;
+
+	// Read till end
+	while(!configFp->atEnd()) {
+		QByteArray bytes = configFp->readLine();
+		QString line = QString(bytes);
+		line = line.trimmed();
+		// printf("%s:%s:%d read line: %s\n", __FILE__, __func__, __LINE__, line.toStdString().c_str());
+
+		// Split to read
+		if (line.startsWith("//")) {
+			// Ignore comments
+			continue;
+		} else if (line.startsWith("#")) {
+			// Command line
+			if (line.compare("#surface_begin") == 0) {
+				// Create new surface and set the ptr
+				addLayer();
+				currentSurf = *(surfaces->end() - 1);
+
+				// Clear initial sub layers
+				currentSurf->clearAllSubSurfaces();
+			} else if (line.compare("#surface_end") == 0) {
+				// Finish setting the surface
+				currentSurf = nullptr;
+			}
+		} else {
+			QStringList words = line.split("=");
+			QString& first = words.first();
+
+			if (first.compare("seed", Qt::CaseInsensitive) == 0) {
+				// Set seed
+				int seed = words.at(1).toInt();
+				randomSeedSpin->setValue(seed);
+			} else if (first.compare("name", Qt::CaseInsensitive) == 0) {
+				// Set name
+				terrainName->setText(words.at(1));
+			} else if (first.compare("width", Qt::CaseInsensitive) == 0) {
+				// Set width
+				int w = words.at(1).toInt();
+				terrainWidth->setValue(w);
+			} else if (first.compare("length", Qt::CaseInsensitive) == 0) {
+				// Set length
+				int l = words.at(1).toInt();
+				terrainLength->setValue(l);
+			} else if (first.compare("Phong", Qt::CaseInsensitive) == 0) {
+				// Set Phong config
+				QStringList phongConfig = words.at(1).split(",");
+				double amb, diff, spec, exp;
+				amb = phongConfig.at(0).toDouble();
+				diff = phongConfig.at(1).toDouble();
+				spec = phongConfig.at(2).toDouble();
+				exp = phongConfig.at(3).toDouble();
+
+				currentSurf->ambStrSpin->setValue(amb);
+				currentSurf->diffStrSpin->setValue(diff);
+				currentSurf->specStrSpin->setValue(spec);
+				currentSurf->specExpSpin->setValue(exp);
+			} else if (first.compare("RGB", Qt::CaseInsensitive) == 0) {
+				// Set Color
+				QStringList RGB = words.at(1).split(",");
+				int r, g, b;
+				r = RGB.at(0).toInt();
+				g = RGB.at(1).toInt();
+				b = RGB.at(2).toInt();
+
+				currentSurf->objColorRSpin->setValue(r);
+				currentSurf->objColorGSpin->setValue(g);
+				currentSurf->objColorBSpin->setValue(b);
+			} else if (first.compare("enable_surface", Qt::CaseInsensitive) == 0) {
+				int enable = words.at(1).toInt();
+				currentSurf->enableSurfaceCB->setChecked(enable);
+			} else if (first.compare("draw_surface", Qt::CaseInsensitive) == 0) {
+				int draw = words.at(1).toInt();
+				currentSurf->drawSurfaceCB->setChecked(draw);
+			} else if (first.compare("func", Qt::CaseInsensitive) == 0) {
+				// Adding funcs
+				currentSurf->addSurfaceFunc();
+				SurfaceWidgetGroup::SubSurfaceFunc* sublayer_widget = *(currentSurf->subSurfaceFuncs->end() - 1);
+				sublayer_widget->subSurfaceLine->setText(words.at(1));
+			}
+		}
+	}
+
+	configFp->close();
+	delete configFp;
+
+	generateLayers();
+}
+
+void App::saveConfigFile(QString& filepath) {
+	// Open file to write
+	QFile* saveFp = new QFile(filepath);
+	saveFp->open(QIODevice::Text | QIODevice::WriteOnly);
+
+	// Random seed
+	int seed = randomSeedSpin->value();
+	saveFp->write(QString("seed=%1\n").arg(seed).toUtf8());
+
+	// Terrain Name
+	QString name = terrainName->text();
+	saveFp->write(QString("name=%1\n").arg(name).toUtf8());
+
+	// Width and length
+	int w,l;
+	w = terrainWidth->value();
+	l = terrainLength->value();
+	saveFp->write(QString("width=%1\n").arg(w).toUtf8());
+	saveFp->write(QString("length=%1\n").arg(l).toUtf8());
+
+	// Write each surface
+	for (auto it = surfaces->begin(); it < surfaces->end(); it++) {
+		// Surface begin
+		saveFp->write(QString("\n#surface_begin\n").toUtf8());
+		App::SurfaceWidgetGroup* surface = *it;
+
+		// Phong Config param
+		double ambient, diffuse, specular, exponet;
+		ambient = surface->ambStrSpin->value();
+		diffuse = surface->diffStrSpin->value();
+		specular = surface->specStrSpin->value();
+		exponet = surface->specExpSpin->value();
+		saveFp->write(QString("// Phong Config: ambient,diffuse,specular, exponet\n").toUtf8());
+		saveFp->write(QString("Phong=%1,%2,%3,%4\n").arg(ambient).arg(diffuse).arg(specular).arg(exponet).toUtf8());
+
+		// Color
+		int r,g,b;
+		r = surface->objColorRSpin->value();
+		g = surface->objColorGSpin->value();
+		b = surface->objColorBSpin->value();
+		saveFp->write(QString("RGB=%1,%2,%3\n").arg(r).arg(g).arg(b).toUtf8());
+
+		// Surface control flag
+		int enable_surface = surface->enableSurfaceCB->checkState() == Qt::CheckState::Checked ? 1 : 0;
+		int draw_surface = surface->drawSurfaceCB->checkState() == Qt::CheckState::Checked ? 1 : 0;
+		saveFp->write(QString("enable_surface=%1\n").arg(enable_surface).toUtf8());
+		saveFp->write(QString("draw_surface=%1\n").arg(draw_surface).toUtf8());
+
+		// For each sub layer
+		for (auto layer_it = surface->subSurfaceFuncs->begin();
+			 layer_it < surface->subSurfaceFuncs->end();
+			 layer_it++) {
+			SurfaceWidgetGroup::SubSurfaceFunc* layer = *layer_it;	
+			QString func_str = layer->subSurfaceLine->text();
+			saveFp->write(QString("func=%1\n").arg(func_str).toUtf8());
+		}
+
+		// Surface end
+		saveFp->write(QString("#surface_end\n\n").toUtf8());
+	}
+
+	saveFp->close();
+
+	delete saveFp;
 }
