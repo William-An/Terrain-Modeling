@@ -375,6 +375,10 @@ void App::initLayout(std::string configFile) {
 	light4ColorPosLayout->addWidget(light4ZLbl, 1, 3);
 	lightLayout->addStretch();
 
+	// Save image button
+	saveImageBtn = new QPushButton("Save Image", this);
+	lightLayout->addWidget(saveImageBtn);
+
 	topLayout->addLayout(lightLayout);
 
 	// Conntect random seed spiner to glstate
@@ -838,6 +842,12 @@ void App::initLayout(std::string configFile) {
 			default: break;
 			}
 		});
+	
+	connect(saveImageBtn, &QPushButton::clicked, [=] {
+		QImage image = glView->grabFramebuffer();
+		QString filename = QFileDialog::getSaveFileName(this, tr("Save screenshot"), "./screenshot.png", tr("Images (*.png *.jpg)"));
+		image.save(filename);
+	});
 }
 
 // Search the models/ directory for any .obj files and adds them to the combo box

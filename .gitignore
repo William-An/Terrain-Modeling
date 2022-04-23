@@ -10,6 +10,8 @@ base_qt
 build/
 .vscode/
 core
+*.png
+*.jpg
 
 # Prerequisites
 *.d

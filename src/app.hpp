@@ -177,6 +177,7 @@ private:
 	QPushButton* clearSurfaceBtn;		// Remove all surface funcs
 	QPushButton* loadTerrainConfigBtn;
 	QPushButton* dumpTerrainConfigBtn;
+	QPushButton* saveImageBtn;
 
 	// Surface control
 	QVBoxLayout* surfacesLayout;
