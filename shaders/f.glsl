@@ -95,7 +95,7 @@ void main() {
 					continue;
 				
 				// Below the surface, choose this config
-				vec4 texValue = texture(heightMap, vec3(localFragPos.x, -localFragPos.z, configIdx));
+				vec4 texValue = texture(heightMap, vec3(localFragPos.x * 0.5 + 0.5, (-localFragPos.z) * 0.5 + 0.5, configIdx));
 				float height = texValue.r;
 				if (localFragPos.y < height) {
 					foundPhong2Use = true;
