@@ -200,6 +200,14 @@ void Terrain::generate() {
                 accumulated_normals[c1_indx.x][c1_indx.y] += face_norm_top + face_norm_bot;
                 accumulated_normals[c1_indx.x][c1_indx.y] += face_norm_top;
                 accumulated_normals[c1_indx.x][c1_indx.y] += face_norm_top + face_norm_bot;
+
+                // Adding texture coordinates
+                vertices[(row * (length - 1) + col) * 6 + 0].texture_coord = glm::vec2((float) c4_indx.x / width, (float) c4_indx.y / length);
+                vertices[(row * (length - 1) + col) * 6 + 1].texture_coord = glm::vec2((float) c1_indx.x / width, (float) c1_indx.y / length);
+                vertices[(row * (length - 1) + col) * 6 + 2].texture_coord = glm::vec2((float) c2_indx.x / width, (float) c2_indx.y / length);
+                vertices[(row * (length - 1) + col) * 6 + 3].texture_coord = glm::vec2((float) c2_indx.x / width, (float) c2_indx.y / length);
+                vertices[(row * (length - 1) + col) * 6 + 4].texture_coord = glm::vec2((float) c3_indx.x / width, (float) c3_indx.y / length);
+                vertices[(row * (length - 1) + col) * 6 + 5].texture_coord = glm::vec2((float) c4_indx.x / width, (float) c4_indx.y / length);
             }
         }
 
@@ -246,6 +254,8 @@ void Terrain::generate() {
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)sizeof(glm::vec3));
         glEnableVertexAttribArray(2);
         glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(2 * sizeof(glm::vec3)));
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(3 * sizeof(glm::vec3)));
 
         glBindVertexArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);

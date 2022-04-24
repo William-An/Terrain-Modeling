@@ -111,6 +111,7 @@ protected:
 		glm::vec3 pos;			// Position
 		glm::vec3 face_norm;	// Face normal
 		glm::vec3 smooth_norm;	// Smoothed normal
+        glm::vec2 texture_coord;
 		// Vertex();
 	};
     
