@@ -8,11 +8,13 @@ const int SHADINGMODE_GOURAUD = 2;
 layout(location = 0) in vec3 pos;			// Model-space position
 layout(location = 1) in vec3 face_norm;		// Model-space face normal
 layout(location = 2) in vec3 smooth_norm;	// Model-space smoothed normal
+layout(location = 3) in vec2 texture_coord;	// texture coordinate
 
 smooth out vec3 fragPos;	// Interpolated position in world-space
 smooth out vec3 fragNorm;	// Interpolated normal in world-space
 smooth out vec3 gouraudCol;	// Interpolated frag color
 smooth out vec3 localFragPos;	// Local interpolated frag pos
+smooth out vec2 fragTextureCoord;
 
 uniform mat4 modelMat;		// Model-to-world transform matrix
 uniform mat4 viewProjMat;	// World-to-clip transform matrix
@@ -56,6 +58,7 @@ void main() {
 	fragPos = vec3(modelMat * vec4(pos, 1.0));
 	fragNorm = vec3(modelMat * vec4(norm, 0.0));
 	localFragPos = pos;
+	fragTextureCoord = texture_coord;
 
 	// Output clip-space position
 	gl_Position = viewProjMat * vec4(fragPos, 1.0);

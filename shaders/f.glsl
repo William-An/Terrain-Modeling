@@ -11,6 +11,7 @@ smooth in vec3 fragPos;		// Interpolated position in world-space
 smooth in vec3 fragNorm;	// Interpolated normal in world-space
 smooth in vec3 gouraudCol;	// Interpolated frag color
 smooth in vec3 localFragPos;	// Interpolated local pos
+smooth in vec2 fragTextureCoord;
 
 out vec3 outCol;	// Final pixel color
 
@@ -95,7 +96,9 @@ void main() {
 					continue;
 				
 				// Below the surface, choose this config
-				vec4 texValue = texture(heightMap, vec3(localFragPos.x * 0.5 + 0.5, (-localFragPos.z) * 0.5 + 0.5, configIdx));
+				// TODO Looks like the texture is not correctly read...
+				vec4 texValue = texture(heightMap, vec3(fragTextureCoord.y, fragTextureCoord.x, configIdx));
+				// vec4 texValue = texture(heightMap, vec3(localFragPos.x * 0.5 + 0.5, (-localFragPos.z) * 0.5 + 0.5, configIdx));
 				float height = texValue.r;
 				if (localFragPos.y < height) {
 					foundPhong2Use = true;
